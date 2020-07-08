@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 172.29.67.0/26
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["vpc-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 172.29.67.0/28
+      AvailabilityZone: !Select [ 0, !GetAZs ]    # First AZ in the list
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 172.29.67.16/28
+      AvailabilityZone: !Select [ 1, !GetAZs ]    # Second AZ in the list
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+  Subnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 172.29.67.32/28
+      AvailabilityZone: !Select [ 2, !GetAZs ]    # Third AZ in the list
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["AZ3-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+  Subnet4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 172.29.67.48/28
+      AvailabilityZone: !Select [ 0, !GetAZs ]    # First AZ in the list
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["non-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
