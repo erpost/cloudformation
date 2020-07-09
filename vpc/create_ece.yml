@@ -1,4 +1,11 @@
 AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy ECE
+
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
 
 Resources:
   VPC:
@@ -18,7 +25,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 172.29.67.0/28
-      AvailabilityZone: !Select [ 0, !GetAZs ]    # First AZ in the list
+      AvailabilityZone: !Select [ 0, !GetAZs ]    # AZ 1
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
@@ -29,7 +36,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 172.29.67.16/28
-      AvailabilityZone: !Select [ 1, !GetAZs ]    # Second AZ in the list
+      AvailabilityZone: !Select [ 1, !GetAZs ]    # AZ 2
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
@@ -40,7 +47,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 172.29.67.32/28
-      AvailabilityZone: !Select [ 2, !GetAZs ]    # Third AZ in the list
+      AvailabilityZone: !Select [ 2, !GetAZs ]    # AZ 3
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ3-", !Ref "AWS::StackName" ]]
@@ -51,7 +58,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 172.29.67.48/28
-      AvailabilityZone: !Select [ 0, !GetAZs ]    # First AZ in the list
+      AvailabilityZone: !Select [ 0, !GetAZs ]    # AZ 1
       Tags:
       - Key: Name
         Value: !Join ['', ["non-", !Ref "AWS::StackName" ]]
