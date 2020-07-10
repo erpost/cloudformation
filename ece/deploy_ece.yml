@@ -1,7 +1,51 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Deploy ECE
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Network Configuration"
+        Parameters:
+          - AZs
+          - VPCCidr
+          - Sub1Cidr
+          - Sub2Cidr
+          - Sub3Cidr
+          - Sub4Cidr
+    ParameterLabels:
+      AZs:
+        default: "Choose 3 Availability Zones"
+      VPCCidr:
+        default: "VPC CIDR Block?"
+      Sub1Cidr:
+        default: "Subnet 1 CIDR Block?"
+      Sub2Cidr:
+        default: "Subnet 2 CIDR Block?"
+      Sub3Cidr:
+        default: "Subnet 3 CIDR Block?"
+      Sub4Cidr:
+        default: "Subnet 4 CIDR Block?"
+
 Parameters:
+  VPCCidr:  # VPC CIDR Block
+    Type: String
+    Default: 172.29.67.0/26
+  Sub1Cidr:  # Subnet 1 CIDR Block
+    Type: String
+    Default: 172.29.67.0/28
+  Sub2Cidr:  # Subnet 2 CIDR Block
+    Type: String
+    Default: 172.29.67.16/28
+  Sub3Cidr:  # Subnet 3 CIDR Block
+    Type: String
+    Default: 172.29.67.32/28
+  Sub4Cidr:  # Subnet 4 CIDR Block
+    Type: String
+    Default: 172.29.67.48/28
+  AZs:  # Availability Zones
+    Type: List<AWS::EC2::AvailabilityZone::Name>
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -42,7 +86,7 @@ Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 172.29.67.0/26
+      CidrBlock: !Ref VPCCidr
       EnableDnsSupport: true
       EnableDnsHostnames: true
       InstanceTenancy: default
@@ -55,8 +99,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 172.29.67.0/28
-      AvailabilityZone: !Select [ 0, !GetAZs ]    # AZ 1
+      CidrBlock: !Ref Sub1Cidr
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
@@ -66,8 +110,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 172.29.67.16/28
-      AvailabilityZone: !Select [ 1, !GetAZs ]    # AZ 2
+      CidrBlock: !Ref Sub2Cidr
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
@@ -77,8 +121,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 172.29.67.32/28
-      AvailabilityZone: !Select [ 2, !GetAZs ]    # AZ 3
+      CidrBlock: !Ref Sub3Cidr
+      AvailabilityZone: !Select [ 2, !Ref AZs ]    # AZ 3
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ3-", !Ref "AWS::StackName" ]]
@@ -88,8 +132,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 172.29.67.48/28
-      AvailabilityZone: !Select [ 0, !GetAZs ]    # AZ 1
+      CidrBlock: !Ref Sub4Cidr
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
       Tags:
       - Key: Name
         Value: !Join ['', ["non-", !Ref "AWS::StackName" ]]
@@ -120,6 +164,8 @@ Resources:
 #    Type: 'AWS::EC2::SecurityGroup'
 #    Properties:
 #      GroupDescription: Enable SSH access via port 22
+#      GroupName: SSH Inbound
+#      VpcId: !Ref VPC
 #      SecurityGroupIngress:
 #        - IpProtocol: tcp
 #          FromPort: '22'
