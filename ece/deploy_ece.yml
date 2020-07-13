@@ -14,6 +14,13 @@ Metadata:
           - Sub2Cidr
           - Sub3Cidr
           - Sub4Cidr
+      -
+        Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - KeyName
+          - InstanceType
+          - SSHLocation
     ParameterLabels:
       AZs:
         default: "Choose 3 Availability Zones"
@@ -140,13 +147,25 @@ Resources:
       - Key: Environment
         Value: elastic-poc
 
-  EC2Instance:
+  SecurityGroupSSH:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      GroupName: SSH Inbound
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+
+  MGMT1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
       InstanceType: !Ref InstanceType
       SubnetId: !Ref Subnet1
-#      SecurityGroups:
-#        - !Ref InstanceSecurityGroup
+      SecurityGroups:
+        - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !FindInMap
         - AWSRegionArch2AMI
@@ -157,17 +176,46 @@ Resources:
           - Arch
       Tags:
         - Key: Name
-          Value: !Join ['', ["mgmt1-", !Ref "AWS::StackName" ]]
+          Value: !Join ['', ["mgmt1-az1-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
-#  InstanceSecurityGroup:
-#    Type: 'AWS::EC2::SecurityGroup'
-#    Properties:
-#      GroupDescription: Enable SSH access via port 22
-#      GroupName: SSH Inbound
-#      VpcId: !Ref VPC
-#      SecurityGroupIngress:
-#        - IpProtocol: tcp
-#          FromPort: '22'
-#          ToPort: '22'
-#          CidrIp: !Ref SSHLocation
+  MGMT1AZ2:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet2
+      SecurityGroups:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["mgmt1-az2-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  MGMT1AZ3:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet3
+      SecurityGroups:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
