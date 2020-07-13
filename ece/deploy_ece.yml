@@ -164,7 +164,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       SubnetId: !Ref Subnet1
-      SecurityGroups:
+      SecurityGroupIds:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !FindInMap
@@ -184,7 +184,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       SubnetId: !Ref Subnet2
-      SecurityGroups:
+      SecurityGroupIds:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !FindInMap
@@ -204,7 +204,7 @@ Resources:
     Properties:
       InstanceType: !Ref InstanceType
       SubnetId: !Ref Subnet3
-      SecurityGroups:
+      SecurityGroupIds:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !FindInMap
@@ -219,3 +219,14 @@ Resources:
           Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+
+Outputs:
+  MGMT1AZ1PrivateIP:
+    Description: Private IP of MGMT1AZ1
+    Value: !GetAtt MGMT1AZ1.PrivateIp
+  MGMT1AZ2PrivateIP:
+    Description: Private IP of MGMT1AZ2
+    Value: !GetAtt MGMT1AZ2.PrivateIp
+  MGMT1AZ3PrivateIP:
+    Description: Private IP of MGMT1AZ3
+    Value: !GetAtt MGMT1AZ3.PrivateIp
