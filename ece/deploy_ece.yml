@@ -179,6 +179,46 @@ Resources:
           Value: !Join ['', ["mgmt1-az1-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+  Master1AZ1:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet1
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["master1-az1-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  HotData1AZ1:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet1
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["hotdata1-az1-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
   MGMT1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -199,6 +239,46 @@ Resources:
           Value: !Join ['', ["mgmt1-az2-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+  Master1AZ2:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["master1-az2-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  HotData1AZ2:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["hotdata1-az2-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
   MGMT1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -217,6 +297,46 @@ Resources:
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  Master1AZ3:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet3
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["master1-az3-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  HotData1AZ3:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet3
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["hotdata1-az3-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
 
