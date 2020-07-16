@@ -149,17 +149,28 @@ Resources:
       - Key: Environment
         Value: elastic-poc
 
-  SecurityGroupSSH:
+  SecurityGroupSSHInbound:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable SSH access via port 22
-      GroupName: SSH Inbound
+      GroupName: SSH External
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
           CidrIp: !Ref SSHLocation
+  SecurityGroupSSH:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      GroupName: SSH Internal
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !GetAtt VPC.CidrBlock
   SecurityGroupElastic:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -408,6 +419,30 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Subnet4
+  BastionHost:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet4
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSHInbound
+      KeyName: !Ref KeyName
+      ImageId: !Ref AMIID
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["bastion-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: Bastion
+  BastionElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref BastionHost
+      Tags:
+        - Key: Environment
+          Value: elastic-poc
 
 Outputs:
   MGMT1AZ1PrivateIP:
@@ -446,3 +481,6 @@ Outputs:
   WarmData1AZ3PrivateIP:
     Description: Private IP of WarmData1AZ3 (Host 12)
     Value: !GetAtt WarmData1AZ3.PrivateIp
+  BastionHostPublicIP:
+    Description: Public IP of Bastion Host
+    Value: !GetAtt BastionHost.PublicIp
