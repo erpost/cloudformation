@@ -18,6 +18,7 @@ Metadata:
         Label:
           default: "EC2 Configuration"
         Parameters:
+          - AMIID
           - KeyName
           - InstanceType
           - SSHLocation
@@ -53,6 +54,9 @@ Parameters:
     Default: 172.29.67.48/28
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
+  AMIID:
+    Description: ID of AMI
+    Type: String
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -74,22 +78,20 @@ Parameters:
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
 
-Mappings:
-  AWSInstanceType2Arch:
-    t2.nano:
-      Arch: HVM64
-    t2.micro:
-      Arch: HVM64
-  AWSInstanceType2NATArch:
-    t2.nano:
-      Arch: NATHVM64
-    t2.micro:
-      Arch: NATHVM64
-  AWSRegionArch2AMI:
-    us-east-2:
-      HVM64: ami-0bdcc6c05dec346bf
-
 Resources:
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["igw-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -158,6 +160,28 @@ Resources:
           FromPort: '22'
           ToPort: '22'
           CidrIp: !Ref SSHLocation
+  SecurityGroupElastic:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable Elastic Internal Traffic
+      GroupName: Elastic Internal
+      VpcId: !Ref VPC
+  SecurityGroupIngress1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '12443'
+      ToPort: '12443'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '9243'
+      ToPort: '9243'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
 
   MGMT1AZ1:
     Type: 'AWS::EC2::Instance'
@@ -166,19 +190,16 @@ Resources:
       SubnetId: !Ref Subnet1
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az1-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 1
   Master1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -186,19 +207,16 @@ Resources:
       SubnetId: !Ref Subnet1
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az1-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 4
   HotData1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -206,19 +224,33 @@ Resources:
       SubnetId: !Ref Subnet1
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["hotdata1-az1-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 7
+  WarmData1AZ1:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet1
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
+      KeyName: !Ref KeyName
+      ImageId: !Ref AMIID
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["warmdata1-az1-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: 10
   MGMT1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -226,19 +258,16 @@ Resources:
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az2-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 2
   Master1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -246,19 +275,16 @@ Resources:
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az2-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 5
   HotData1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -266,19 +292,33 @@ Resources:
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["hotdata1-az2-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 8
+  WarmData1AZ2:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
+      KeyName: !Ref KeyName
+      ImageId: !Ref AMIID
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["warmdata1-az2-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: 11
   MGMT1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -286,19 +326,16 @@ Resources:
       SubnetId: !Ref Subnet3
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 3
   Master1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -306,19 +343,16 @@ Resources:
       SubnetId: !Ref Subnet3
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az3-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 6
   HotData1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -326,27 +360,68 @@ Resources:
       SubnetId: !Ref Subnet3
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !FindInMap
-        - AWSRegionArch2AMI
-        - !Ref 'AWS::Region'
-        - !FindInMap
-          - AWSInstanceType2Arch
-          - !Ref InstanceType
-          - Arch
+      ImageId: !Ref AMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["hotdata1-az3-", !Ref "AWS::StackName" ]]
         - Key: Environment
           Value: elastic-poc
+        - Key: Host
+          Value: 9
+  WarmData1AZ3:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceType
+      SubnetId: !Ref Subnet3
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupElastic
+      KeyName: !Ref KeyName
+      ImageId: !Ref AMIID
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["warmdata1-az3-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: 9
 
 Outputs:
   MGMT1AZ1PrivateIP:
-    Description: Private IP of MGMT1AZ1
+    Description: Private IP of MGMT1AZ1 (Host 01)
     Value: !GetAtt MGMT1AZ1.PrivateIp
   MGMT1AZ2PrivateIP:
-    Description: Private IP of MGMT1AZ2
+    Description: Private IP of MGMT1AZ2 (Host 02)
     Value: !GetAtt MGMT1AZ2.PrivateIp
   MGMT1AZ3PrivateIP:
-    Description: Private IP of MGMT1AZ3
+    Description: Private IP of MGMT1AZ3 (Host 03)
     Value: !GetAtt MGMT1AZ3.PrivateIp
+  Master1AZ1PrivateIP:
+    Description: Private IP of Master1AZ1 (Host 04)
+    Value: !GetAtt Master1AZ1.PrivateIp
+  Master1AZ2PrivateIP:
+    Description: Private IP of Master1AZ2 (Host 05)
+    Value: !GetAtt Master1AZ2.PrivateIp
+  Master1AZ3PrivateIP:
+    Description: Private IP of Master1AZ3 (Host 06)
+    Value: !GetAtt Master1AZ3.PrivateIp
+  HotData1AZ1PrivateIP:
+    Description: Private IP of HotData1AZ1 (Host 07)
+    Value: !GetAtt HotData1AZ1.PrivateIp
+  HotData1AZ2PrivateIP:
+    Description: Private IP of HotData1AZ2 (Host 08)
+    Value: !GetAtt HotData1AZ2.PrivateIp
+  HotData1AZ3PrivateIP:
+    Description: Private IP of HotData1AZ3 (Host 09)
+    Value: !GetAtt HotData1AZ3.PrivateIp
+  WarmData1AZ1PrivateIP:
+    Description: Private IP of WarmData1AZ1 (Host 10)
+    Value: !GetAtt WarmData1AZ1.PrivateIp
+  WarmData1AZ2PrivateIP:
+    Description: Private IP of WarmData1AZ2 (Host 11)
+    Value: !GetAtt WarmData1AZ2.PrivateIp
+  WarmData1AZ3PrivateIP:
+    Description: Private IP of WarmData1AZ3 (Host 12)
+    Value: !GetAtt WarmData1AZ3.PrivateIp

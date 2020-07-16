@@ -48,6 +48,19 @@ Parameters:
     Type: List<AWS::EC2::AvailabilityZone::Name>
 
 Resources:
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["igw-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
