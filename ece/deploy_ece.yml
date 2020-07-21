@@ -20,7 +20,11 @@ Metadata:
         Parameters:
           - AMIID
           - KeyName
-          - InstanceType
+          - KMSKey
+          - ManagementInstanceType
+          - MasterInstanceType
+          - HotDataInstanceType
+          - WarmDataInstanceType
           - SSHLocation
     ParameterLabels:
       AZs:
@@ -61,13 +65,40 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  InstanceType:
-    Description: WebServer EC2 instance type
+  KMSKey:
+    Description: AliasName of an existing KMS Key for encrypting Volumes
     Type: String
-    Default: t2.nano
+  ManagementInstanceType:
+    Description: Management Server type
+    Type: String
+    Default: m5.2xlarge
     AllowedValues:
       - t2.nano
-      - t2.micro
+      - m5.2xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  MasterInstanceType:
+    Description: Master Server type
+    Type: String
+    Default: t3.2xlarge
+    AllowedValues:
+      - t2.nano
+      - t3.2xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  HotDataInstanceType:
+    Description: Hot Data Server type
+    Type: String
+    Default: r5.2xlarge
+    AllowedValues:
+      - t2.nano
+      - r5.2xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  WarmDataInstanceType:
+    Description: Warm Data Server type
+    Type: String
+    Default: h1.2xlarge
+    AllowedValues:
+      - t2.nano
+      - h1.2xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   SSHLocation:
     Description: The IP address range that can be used to SSH to the EC2 instances
@@ -197,7 +228,7 @@ Resources:
   MGMT1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref ManagementInstanceType
       SubnetId: !Ref Subnet1
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -214,7 +245,7 @@ Resources:
   Master1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref MasterInstanceType
       SubnetId: !Ref Subnet1
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -231,7 +262,7 @@ Resources:
   HotData1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref HotDataInstanceType
       SubnetId: !Ref Subnet1
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -248,7 +279,7 @@ Resources:
   WarmData1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref WarmDataInstanceType
       SubnetId: !Ref Subnet1
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -265,7 +296,7 @@ Resources:
   MGMT1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref ManagementInstanceType
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -282,7 +313,7 @@ Resources:
   Master1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref MasterInstanceType
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -299,7 +330,7 @@ Resources:
   HotData1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref HotDataInstanceType
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -316,7 +347,7 @@ Resources:
   WarmData1AZ2:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref WarmDataInstanceType
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -333,7 +364,7 @@ Resources:
   MGMT1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref ManagementInstanceType
       SubnetId: !Ref Subnet3
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -350,7 +381,7 @@ Resources:
   Master1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref MasterInstanceType
       SubnetId: !Ref Subnet3
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -367,7 +398,7 @@ Resources:
   HotData1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref HotDataInstanceType
       SubnetId: !Ref Subnet3
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -384,7 +415,7 @@ Resources:
   WarmData1AZ3:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref WarmDataInstanceType
       SubnetId: !Ref Subnet3
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
@@ -422,7 +453,7 @@ Resources:
   BastionHost:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: !Ref InstanceType
+      InstanceType: t2.micro
       SubnetId: !Ref Subnet4
       SecurityGroupIds:
         - !Ref SecurityGroupSSHInbound
@@ -448,6 +479,8 @@ Resources:
     Properties:
       Size: 100
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt MGMT1AZ1.AvailabilityZone
       Tags:
         - Key: Name
@@ -465,6 +498,8 @@ Resources:
     Properties:
       Size: 100
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt Master1AZ1.AvailabilityZone
       Tags:
         - Key: Name
@@ -482,6 +517,8 @@ Resources:
     Properties:
       Size: 1024
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt HotData1AZ1.AvailabilityZone
       Tags:
         - Key: Name
@@ -499,6 +536,8 @@ Resources:
     Properties:
       Size: 2048
       VolumeType: st1
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt WarmData1AZ1.AvailabilityZone
       Tags:
         - Key: Name
@@ -516,6 +555,8 @@ Resources:
     Properties:
       Size: 100
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt MGMT1AZ2.AvailabilityZone
       Tags:
         - Key: Name
@@ -533,6 +574,8 @@ Resources:
     Properties:
       Size: 100
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt Master1AZ2.AvailabilityZone
       Tags:
         - Key: Name
@@ -550,6 +593,8 @@ Resources:
     Properties:
       Size: 1024
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt HotData1AZ2.AvailabilityZone
       Tags:
         - Key: Name
@@ -567,6 +612,8 @@ Resources:
     Properties:
       Size: 2048
       VolumeType: st1
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt WarmData1AZ2.AvailabilityZone
       Tags:
         - Key: Name
@@ -584,6 +631,8 @@ Resources:
     Properties:
       Size: 100
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt MGMT1AZ3.AvailabilityZone
       Tags:
         - Key: Name
@@ -601,6 +650,8 @@ Resources:
     Properties:
       Size: 100
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt Master1AZ3.AvailabilityZone
       Tags:
         - Key: Name
@@ -618,6 +669,8 @@ Resources:
     Properties:
       Size: 1024
       VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt HotData1AZ3.AvailabilityZone
       Tags:
         - Key: Name
@@ -635,6 +688,8 @@ Resources:
     Properties:
       Size: 2048
       VolumeType: st1
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       AvailabilityZone: !GetAtt WarmData1AZ3.AvailabilityZone
       Tags:
         - Key: Name
