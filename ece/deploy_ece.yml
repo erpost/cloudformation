@@ -443,6 +443,210 @@ Resources:
       Tags:
         - Key: Environment
           Value: elastic-poc
+  VolumeMGMT1AZ1:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 100
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt MGMT1AZ1.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["mgmt1-az1-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeMGMT1AZ1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref MGMT1AZ1
+      VolumeId: !Ref VolumeMGMT1AZ1
+  VolumeMaster1AZ1:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 100
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt Master1AZ1.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["master1-az1-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeMaster1AZ1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref Master1AZ1
+      VolumeId: !Ref VolumeMaster1AZ1
+  VolumeHotData1AZ1:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 1024
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt HotData1AZ1.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["hotdata1-az1-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeHotData1AZ1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref HotData1AZ1
+      VolumeId: !Ref VolumeHotData1AZ1
+  VolumeWarmData1AZ1:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 2048
+      VolumeType: st1
+      AvailabilityZone: !GetAtt WarmData1AZ1.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["warmdata1-az1-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeWarmData1AZ1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref WarmData1AZ1
+      VolumeId: !Ref VolumeWarmData1AZ1
+  VolumeMGMT1AZ2:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 100
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt MGMT1AZ2.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["mgmt1-az2-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeMGMT1AZ2:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref MGMT1AZ2
+      VolumeId: !Ref VolumeMGMT1AZ2
+  VolumeMaster1AZ2:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 100
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt Master1AZ2.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["master1-az2-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeMaster1AZ2:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref Master1AZ2
+      VolumeId: !Ref VolumeMaster1AZ2
+  VolumeHotData1AZ2:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 1024
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt HotData1AZ2.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["hotdata1-az2-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeHotData1AZ2:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref HotData1AZ2
+      VolumeId: !Ref VolumeHotData1AZ2
+  VolumeWarmData1AZ2:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 2048
+      VolumeType: st1
+      AvailabilityZone: !GetAtt WarmData1AZ2.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["warmdata1-az2-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeWarmData1AZ2:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref WarmData1AZ2
+      VolumeId: !Ref VolumeWarmData1AZ2
+  VolumeMGMT1AZ3:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 100
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt MGMT1AZ3.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["mgmt1-az3-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeMGMT1AZ3:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref MGMT1AZ3
+      VolumeId: !Ref VolumeMGMT1AZ3
+  VolumeMaster1AZ3:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 100
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt Master1AZ3.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["master1-az3-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeMaster1AZ3:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref Master1AZ3
+      VolumeId: !Ref VolumeMaster1AZ3
+  VolumeHotData1AZ3:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 1024
+      VolumeType: gp2
+      AvailabilityZone: !GetAtt HotData1AZ3.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["hotdata1-az3-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeHotData1AZ3:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref HotData1AZ3
+      VolumeId: !Ref VolumeHotData1AZ3
+  VolumeWarmData1AZ3:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 2048
+      VolumeType: st1
+      AvailabilityZone: !GetAtt WarmData1AZ3.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["warmdata1-az3-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeWarmData1AZ3:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref WarmData1AZ3
+      VolumeId: !Ref VolumeWarmData1AZ3
 
 Outputs:
   MGMT1AZ1PrivateIP:
