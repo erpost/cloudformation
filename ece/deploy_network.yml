@@ -14,6 +14,9 @@ Metadata:
           - Sub2Cidr
           - Sub3Cidr
           - Sub4Cidr
+          - Sub5Cidr
+          - Sub6Cidr
+
     ParameterLabels:
       AZs:
         default: "Choose 3 Availability Zones"
@@ -27,11 +30,15 @@ Metadata:
         default: "Subnet 3 CIDR Block"
       Sub4Cidr:
         default: "Subnet 4 CIDR Block"
+      Sub5Cidr:
+        default: "Subnet 5 CIDR Block?"
+      Sub6Cidr:
+        default: "Subnet 6 CIDR Block?"
 
 Parameters:
   VPCCidr:  # VPC CIDR Block
     Type: String
-    Default: 172.29.67.0/26
+    Default: 172.29.67.0/25
   Sub1Cidr:  # Subnet 1 CIDR Block
     Type: String
     Default: 172.29.67.0/28
@@ -44,6 +51,12 @@ Parameters:
   Sub4Cidr:  # Subnet 4 CIDR Block
     Type: String
     Default: 172.29.67.48/28
+  Sub5Cidr:  # Subnet 5 CIDR Block
+    Type: String
+    Default: 172.29.67.64/28
+  Sub6Cidr:  # Subnet 6 CIDR Block
+    Type: String
+    Default: 172.29.67.80/28
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
 
@@ -117,3 +130,107 @@ Resources:
         Value: !Join ['', ["non-", !Ref "AWS::StackName" ]]
       - Key: Environment
         Value: elastic-poc
+  Subnet5:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Sub5Cidr
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["public1-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+  Subnet6:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Sub6Cidr
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["public2-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["public-rt-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+  PublicRouteTableAssociationSubnet5:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref Subnet5
+  PublicRouteTableAssociationSubnet6:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref Subnet6
+
+Outputs:
+  VPC:
+    Description: VPC CrossStack ID
+    Value: !Ref VPC
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-VPC"
+  VPCCIDR:
+    Description: VPC CIDR CrossStack ID
+    Value: !GetAtt VPC.CidrBlock
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-VPCCIDR"
+  IGW:
+    Description: IGW CrossStack ID
+    Value: !Ref IGW
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-IGW"
+  Subnet1:
+    Description: Subnet 1 CrossStack ID
+    Value: !Ref Subnet1
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet1"
+  Subnet2:
+    Description: Subnet 2 CrossStack ID
+    Value: !Ref Subnet2
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet2"
+  Subnet3:
+    Description: Subnet 3 CrossStack ID
+    Value: !Ref Subnet3
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet3"
+  Subnet4:
+    Description: Subnet 4 CrossStack ID
+    Value: !Ref Subnet4
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet4"
+  Subnet5:
+    Description: Subnet 5 CrossStack ID
+    Value: !Ref Subnet5
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet5"
+  Subnet6:
+    Description: Subnet 6 CrossStack ID
+    Value: !Ref Subnet6
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet6"
