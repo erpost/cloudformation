@@ -362,33 +362,6 @@ Resources:
           Value: elastic-poc
         - Key: Host
           Value: 9
-
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-VPC"
-      Tags:
-      - Key: Name
-        Value: !Join ['', ["public-rt-", !Ref "AWS::StackName" ]]
-      - Key: Environment
-        Value: elastic-poc
-  PublicRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-IGW"
-  PublicRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet5"
   BastionHost:
     Type: 'AWS::EC2::Instance'
     Properties:
