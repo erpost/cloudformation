@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy ECE
+Description: Deploy ECE Compute
 
 Metadata:
   AWS::CloudFormation::Interface:
