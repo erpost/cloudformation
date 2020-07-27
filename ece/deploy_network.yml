@@ -178,11 +178,45 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Subnet6
+  FlowLogRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "vpc-flow-logs.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "flowlogpolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:DescribeLogGroups"
+              - "logs:DescribeLogStreams"
+              - "logs:PutLogEvents"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "FlowLogRole"
+
   VPCFlowLog:
     Type: AWS::EC2::FlowLog
     Properties:
-      DeliverLogsPermissionArn: arn:aws:iam::162947053571:role/flowlogsRole
-      LogGroupName: ECEFlowLogsGroup
+      DeliverLogsPermissionArn: !GetAtt FlowLogRole.Arn
+      LogGroupName: ECE-FlowLogsGroup
       ResourceId: !Ref VPC
       ResourceType: VPC
       TrafficType: ALL
