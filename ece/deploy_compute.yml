@@ -20,6 +20,9 @@ Metadata:
           - MasterInstanceType
           - HotDataInstanceType
           - WarmDataInstanceType
+          - PythonInstanceType
+          - LogstashInstanceType
+          - RabbitMQInstanceType
           - SSHLocation
 
 Parameters:
@@ -70,9 +73,32 @@ Parameters:
     AllowedValues:
       - t2.nano
       - h1.2xlarge
+  PythonInstanceType:
+    Description: Python Server type
+    Type: String
+    Default: t3.2xlarge
+    AllowedValues:
+      - t2.nano
+      - t3.2xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  LogstashInstanceType:
+    Description: Logstash Server type
+    Type: String
+    Default: c5.4xlarge
+    AllowedValues:
+      - t2.nano
+      - c5.4xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  RabbitMQInstanceType:
+    Description: RabbitMQ Server type
+    Type: String
+    Default: t3.2xlarge
+    AllowedValues:
+      - t2.nano
+      - t3.2xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   SSHLocation:
-    Description: The IP address range that can be used to SSH to the EC2 instances
+    Description: The IP address range that can be used to SSH to the Bastion Server
     Type: String
     MinLength: '9'
     MaxLength: '18'
@@ -93,6 +119,19 @@ Resources:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
+          CidrIp: !Ref SSHLocation
+  SecurityGroupHTTPSInbound:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable HTTPS access via port 443
+      GroupName: HTTPS External
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
           CidrIp: !Ref SSHLocation
   SecurityGroupSSH:
     Type: 'AWS::EC2::SecurityGroup'
@@ -362,6 +401,61 @@ Resources:
           Value: elastic-poc
         - Key: Host
           Value: 9
+  Python1AZ1:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref PythonInstanceType
+      SubnetId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-Subnet4"
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupHTTPSInbound
+      KeyName: !Ref KeyName
+      ImageId: !Ref AMIID
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["python1-az1-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: 13
+  Logstash1AZ1:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref LogstashInstanceType
+      SubnetId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-Subnet4"
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !Ref AMIID
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["logstash1-az1-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: 14
+  RabbitMQ1AZ1:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref RabbitMQInstanceType
+      SubnetId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-Subnet4"
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSH
+      KeyName: !Ref KeyName
+      ImageId: !Ref AMIID
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["rabbitmq1-az1-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: 17
   BastionHost:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -616,6 +710,63 @@ Resources:
       Device: /dev/sdb
       InstanceId: !Ref WarmData1AZ3
       VolumeId: !Ref VolumeWarmData1AZ3
+  VolumePython1AZ1:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 100
+      VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+      AvailabilityZone: !GetAtt Python1AZ1.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["python1-az1-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumePython1AZ1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref Python1AZ1
+      VolumeId: !Ref VolumePython1AZ1
+  VolumeLogstash1AZ1:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 500
+      VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+      AvailabilityZone: !GetAtt Logstash1AZ1.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["logstash1-az1-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeLogstash1AZ1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref Logstash1AZ1
+      VolumeId: !Ref VolumeLogstash1AZ1
+  VolumeRabbitMQ1AZ1:
+    Type: AWS::EC2::Volume
+    Properties:
+      Size: 200
+      VolumeType: gp2
+      Encrypted: true
+      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+      AvailabilityZone: !GetAtt RabbitMQ1AZ1.AvailabilityZone
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["rabbitmq1-az1-vol-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+  AttachVolumeRabbitMQ1AZ1:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdb
+      InstanceId: !Ref RabbitMQ1AZ1
+      VolumeId: !Ref VolumeRabbitMQ1AZ1
 
 Outputs:
   MGMT1AZ1PrivateIP:
