@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy ECE Compute
+Description: Deploy ECE Compute Components with New Secondary EBS Volumes
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -189,6 +189,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az1-", !Ref "AWS::StackName" ]]
@@ -208,6 +216,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az1-", !Ref "AWS::StackName" ]]
@@ -227,6 +243,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 1024
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["hotdata1-az1-", !Ref "AWS::StackName" ]]
@@ -246,6 +270,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 2048
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: st1
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["warmdata1-az1-", !Ref "AWS::StackName" ]]
@@ -265,6 +297,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az2-", !Ref "AWS::StackName" ]]
@@ -284,6 +324,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az2-", !Ref "AWS::StackName" ]]
@@ -303,6 +351,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 1024
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["hotdata1-az2-", !Ref "AWS::StackName" ]]
@@ -322,6 +378,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 2048
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: st1
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["warmdata1-az2-", !Ref "AWS::StackName" ]]
@@ -341,6 +405,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
@@ -360,6 +432,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az3-", !Ref "AWS::StackName" ]]
@@ -379,6 +459,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 1024
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["hotdata1-az3-", !Ref "AWS::StackName" ]]
@@ -398,6 +486,14 @@ Resources:
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 2048
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: st1
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["warmdata1-az3-", !Ref "AWS::StackName" ]]
@@ -417,6 +513,14 @@ Resources:
         - !Ref SecurityGroupHTTPSInbound
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["python1-az1-", !Ref "AWS::StackName" ]]
@@ -435,6 +539,14 @@ Resources:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 500
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["logstash1-az1-", !Ref "AWS::StackName" ]]
@@ -453,6 +565,14 @@ Resources:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !Ref AMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 2000
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["rabbitmq1-az1-", !Ref "AWS::StackName" ]]
@@ -486,303 +606,6 @@ Resources:
       Tags:
         - Key: Environment
           Value: elastic-poc
-  VolumeMGMT1AZ1:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 100
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt MGMT1AZ1.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["mgmt1-az1-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeMGMT1AZ1:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref MGMT1AZ1
-      VolumeId: !Ref VolumeMGMT1AZ1
-  VolumeMaster1AZ1:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 100
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt Master1AZ1.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["master1-az1-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeMaster1AZ1:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref Master1AZ1
-      VolumeId: !Ref VolumeMaster1AZ1
-  VolumeHotData1AZ1:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 1024
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt HotData1AZ1.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["hotdata1-az1-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeHotData1AZ1:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref HotData1AZ1
-      VolumeId: !Ref VolumeHotData1AZ1
-  VolumeWarmData1AZ1:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 2048
-      VolumeType: st1
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt WarmData1AZ1.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["warmdata1-az1-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeWarmData1AZ1:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref WarmData1AZ1
-      VolumeId: !Ref VolumeWarmData1AZ1
-  VolumeMGMT1AZ2:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 100
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt MGMT1AZ2.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["mgmt1-az2-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeMGMT1AZ2:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref MGMT1AZ2
-      VolumeId: !Ref VolumeMGMT1AZ2
-  VolumeMaster1AZ2:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 100
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt Master1AZ2.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["master1-az2-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeMaster1AZ2:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref Master1AZ2
-      VolumeId: !Ref VolumeMaster1AZ2
-  VolumeHotData1AZ2:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 1024
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt HotData1AZ2.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["hotdata1-az2-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeHotData1AZ2:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref HotData1AZ2
-      VolumeId: !Ref VolumeHotData1AZ2
-  VolumeWarmData1AZ2:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 2048
-      VolumeType: st1
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt WarmData1AZ2.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["warmdata1-az2-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeWarmData1AZ2:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref WarmData1AZ2
-      VolumeId: !Ref VolumeWarmData1AZ2
-  VolumeMGMT1AZ3:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 100
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt MGMT1AZ3.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["mgmt1-az3-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeMGMT1AZ3:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref MGMT1AZ3
-      VolumeId: !Ref VolumeMGMT1AZ3
-  VolumeMaster1AZ3:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 100
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt Master1AZ3.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["master1-az3-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeMaster1AZ3:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref Master1AZ3
-      VolumeId: !Ref VolumeMaster1AZ3
-  VolumeHotData1AZ3:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 1024
-      VolumeType: gp2
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt HotData1AZ3.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["hotdata1-az3-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeHotData1AZ3:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref HotData1AZ3
-      VolumeId: !Ref VolumeHotData1AZ3
-  VolumeWarmData1AZ3:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 2048
-      VolumeType: st1
-      SnapshotId: !Ref SecondVolumeID
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt WarmData1AZ3.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["warmdata1-az3-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeWarmData1AZ3:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref WarmData1AZ3
-      VolumeId: !Ref VolumeWarmData1AZ3
-  VolumePython1AZ1:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 100
-      VolumeType: gp2
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt Python1AZ1.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["python1-az1-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumePython1AZ1:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref Python1AZ1
-      VolumeId: !Ref VolumePython1AZ1
-  VolumeLogstash1AZ1:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 500
-      VolumeType: gp2
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt Logstash1AZ1.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["logstash1-az1-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeLogstash1AZ1:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref Logstash1AZ1
-      VolumeId: !Ref VolumeLogstash1AZ1
-  VolumeRabbitMQ1AZ1:
-    Type: AWS::EC2::Volume
-    Properties:
-      Size: 200
-      VolumeType: gp2
-      Encrypted: true
-      KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-      AvailabilityZone: !GetAtt RabbitMQ1AZ1.AvailabilityZone
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["rabbitmq1-az1-vol-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-  AttachVolumeRabbitMQ1AZ1:
-    Type: AWS::EC2::VolumeAttachment
-    Properties:
-      Device: /dev/sdc
-      InstanceId: !Ref RabbitMQ1AZ1
-      VolumeId: !Ref VolumeRabbitMQ1AZ1
 
 Outputs:
   MGMT1AZ1PrivateIP:

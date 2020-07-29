@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy ECE Compute
+Description: Deploy ECE Compute Components with Separate AMIs for each Compute Tier
 
 Metadata:
   AWS::CloudFormation::Interface:
