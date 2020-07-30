@@ -13,14 +13,10 @@ Metadata:
         Label:
           default: "EC2 Configuration"
         Parameters:
-          - ManagementAMIID
-          - MasterAMIID
+          - MgmtMasterAMIID
           - HotAMIID
           - WarmAMIID
-          - BastionAMIID
-          - PythonAMIID
-          - LogstashAMIID
-          - RabbitMQAMIID
+          - OtherAMIIDs
           - KeyName
           - KMSKey
           - ManagementInstanceType
@@ -39,29 +35,17 @@ Parameters:
     MinLength: '1'
     MaxLength: '255'
     AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
-  ManagementAMIID:
-    Description: ID of AMI
-    Type: String
-  MasterAMIID:
-    Description: ID of AMI
+  MgmtMasterAMIID:
+    Description: ID of AMI for the Management and Master Tiers
     Type: String
   HotAMIID:
-    Description: ID of AMI
+    Description: ID of AMI for the Hot Tier
     Type: String
   WarmAMIID:
-    Description: ID of AMI
+    Description: ID of AMI for the Warm Tier
     Type: String
-  BastionAMIID:
-    Description: ID of AMI
-    Type: String
-  PythonAMIID:
-    Description: ID of AMI
-    Type: String
-  LogstashAMIID:
-    Description: ID of AMI
-    Type: String
-  RabbitMQAMIID:
-    Description: ID of AMI
+  OtherAMIIDs:
+    Description: ID of AMI for the Bastion/Python/Logstash/RabbitMQ Servers
     Type: String
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
@@ -101,6 +85,7 @@ Parameters:
     AllowedValues:
       - t2.nano
       - h1.2xlarge
+      - m5.2xlarge
   PythonInstanceType:
     Description: Python Server type
     Type: String
@@ -212,7 +197,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref ManagementAMIID
+      ImageId: !Ref MgmtMasterAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az1-", !Ref "AWS::StackName" ]]
@@ -231,7 +216,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MasterAMIID
+      ImageId: !Ref MgmtMasterAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az1-", !Ref "AWS::StackName" ]]
@@ -288,7 +273,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref ManagementAMIID
+      ImageId: !Ref MgmtMasterAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az2-", !Ref "AWS::StackName" ]]
@@ -307,7 +292,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MasterAMIID
+      ImageId: !Ref MgmtMasterAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az2-", !Ref "AWS::StackName" ]]
@@ -364,7 +349,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref ManagementAMIID
+      ImageId: !Ref MgmtMasterAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
@@ -383,7 +368,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MasterAMIID
+      ImageId: !Ref MgmtMasterAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az3-", !Ref "AWS::StackName" ]]
@@ -440,7 +425,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupHTTPSInbound
       KeyName: !Ref KeyName
-      ImageId: !Ref PythonAMIID
+      ImageId: !Ref OtherAMIIDs
       Tags:
         - Key: Name
           Value: !Join ['', ["python1-az1-", !Ref "AWS::StackName" ]]
@@ -458,7 +443,7 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
-      ImageId: !Ref LogstashAMIID
+      ImageId: !Ref OtherAMIIDs
       Tags:
         - Key: Name
           Value: !Join ['', ["logstash1-az1-", !Ref "AWS::StackName" ]]
@@ -476,7 +461,7 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
-      ImageId: !Ref RabbitMQAMIID
+      ImageId: !Ref OtherAMIIDs
       Tags:
         - Key: Name
           Value: !Join ['', ["rabbitmq1-az1-", !Ref "AWS::StackName" ]]
@@ -494,7 +479,7 @@ Resources:
       SecurityGroupIds:
         - !Ref SecurityGroupSSHInbound
       KeyName: !Ref KeyName
-      ImageId: !Ref BastionAMIID
+      ImageId: !Ref OtherAMIIDs
       Tags:
         - Key: Name
           Value: !Join ['', ["bastion-", !Ref "AWS::StackName" ]]
