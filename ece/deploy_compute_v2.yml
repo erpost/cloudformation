@@ -18,7 +18,6 @@ Metadata:
           - WarmAMIID
           - OtherAMIIDs
           - KeyName
-          - KMSKey
           - ManagementInstanceType
           - MasterInstanceType
           - HotDataInstanceType
@@ -51,9 +50,6 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  KMSKey:
-    Description: AliasName of an existing KMS Key for encrypting Volumes
-    Type: String
   ManagementInstanceType:
     Description: Management Server type
     Type: String
