@@ -177,6 +177,7 @@ Resources:
       - Key: Environment
         Value: elastic-poc
 
+
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
