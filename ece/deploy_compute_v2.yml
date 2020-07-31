@@ -519,6 +519,13 @@ Resources:
         - !Ref SecurityGroupSSHInbound
       KeyName: !Ref KeyName
       ImageId: !Ref OtherAMIIDs
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["bastion-", !Ref "AWS::StackName" ]]
