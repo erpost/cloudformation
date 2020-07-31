@@ -422,6 +422,20 @@ Resources:
         - !Ref SecurityGroupHTTPSInbound
       KeyName: !Ref KeyName
       ImageId: !Ref OtherAMIIDs
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 100
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["python1-az1-", !Ref "AWS::StackName" ]]
@@ -440,6 +454,20 @@ Resources:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !Ref OtherAMIIDs
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 500
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["logstash1-az1-", !Ref "AWS::StackName" ]]
@@ -458,6 +486,20 @@ Resources:
         - !Ref SecurityGroupSSH
       KeyName: !Ref KeyName
       ImageId: !Ref OtherAMIIDs
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+        - DeviceName: /dev/sdb
+          Ebs:
+            VolumeSize: 200
+            SnapshotId: !Ref SecondVolumeID
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
       Tags:
         - Key: Name
           Value: !Join ['', ["rabbitmq1-az1-", !Ref "AWS::StackName" ]]
