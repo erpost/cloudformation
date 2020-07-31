@@ -432,7 +432,6 @@ Resources:
         - DeviceName: /dev/sdb
           Ebs:
             VolumeSize: 100
-            SnapshotId: !Ref SecondVolumeID
             VolumeType: gp2
             Encrypted: true
             KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
@@ -464,7 +463,6 @@ Resources:
         - DeviceName: /dev/sdb
           Ebs:
             VolumeSize: 500
-            SnapshotId: !Ref SecondVolumeID
             VolumeType: gp2
             Encrypted: true
             KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
@@ -496,7 +494,6 @@ Resources:
         - DeviceName: /dev/sdb
           Ebs:
             VolumeSize: 200
-            SnapshotId: !Ref SecondVolumeID
             VolumeType: gp2
             Encrypted: true
             KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
