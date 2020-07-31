@@ -62,25 +62,25 @@ Parameters:
       - 3653
   VPCCidr:  # VPC CIDR Block
     Type: String
-    Default: 172.29.67.0/25
+    Default: 172.29.68.0/25
   Sub1Cidr:  # Subnet 1 CIDR Block
     Type: String
-    Default: 172.29.67.0/28
+    Default: 172.29.68.0/28
   Sub2Cidr:  # Subnet 2 CIDR Block
     Type: String
-    Default: 172.29.67.16/28
+    Default: 172.29.68.16/28
   Sub3Cidr:  # Subnet 3 CIDR Block
     Type: String
-    Default: 172.29.67.32/28
+    Default: 172.29.68.32/28
   Sub4Cidr:  # Subnet 4 CIDR Block
     Type: String
-    Default: 172.29.67.48/28
+    Default: 172.29.68.48/28
   Sub5Cidr:  # Subnet 5 CIDR Block
     Type: String
-    Default: 172.29.67.64/28
+    Default: 172.29.68.64/28
   Sub6Cidr:  # Subnet 6 CIDR Block
     Type: String
-    Default: 172.29.67.80/28
+    Default: 172.29.68.80/28
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
 
