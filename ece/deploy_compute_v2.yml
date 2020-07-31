@@ -59,7 +59,7 @@ Parameters:
     Type: String
     Default: m5.2xlarge
     AllowedValues:
-      - t2.nano
+      - t3.micro
       - m5.2xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   MasterInstanceType:
@@ -67,7 +67,7 @@ Parameters:
     Type: String
     Default: t3.2xlarge
     AllowedValues:
-      - t2.nano
+      - t3.micro
       - t3.2xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   HotDataInstanceType:
@@ -75,7 +75,7 @@ Parameters:
     Type: String
     Default: r5.2xlarge
     AllowedValues:
-      - t2.nano
+      - t3.micro
       - r5.2xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   WarmDataInstanceType:
@@ -83,7 +83,7 @@ Parameters:
     Type: String
     Default: h1.2xlarge
     AllowedValues:
-      - t2.nano
+      - t3.micro
       - h1.2xlarge
       - m5.2xlarge
   PythonInstanceType:
@@ -91,7 +91,7 @@ Parameters:
     Type: String
     Default: t3.2xlarge
     AllowedValues:
-      - t2.nano
+      - t3.micro
       - t3.2xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   LogstashInstanceType:
@@ -99,7 +99,7 @@ Parameters:
     Type: String
     Default: c5.4xlarge
     AllowedValues:
-      - t2.nano
+      - t3.micro
       - c5.4xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   RabbitMQInstanceType:
@@ -107,7 +107,7 @@ Parameters:
     Type: String
     Default: t3.2xlarge
     AllowedValues:
-      - t2.nano
+      - t3.micro
       - t3.2xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   SSHLocation:
@@ -511,7 +511,7 @@ Resources:
   BastionHost:
     Type: 'AWS::EC2::Instance'
     Properties:
-      InstanceType: t2.micro
+      InstanceType: t3.micro
       SubnetId:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet5"
