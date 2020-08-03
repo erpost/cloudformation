@@ -81,7 +81,7 @@ Parameters:
   WarmDataInstanceType:
     Description: Warm Data Server type
     Type: String
-    Default: h1.2xlarge
+    Default: m5.2xlarge
     AllowedValues:
       - t3.micro
       - h1.2xlarge

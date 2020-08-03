@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy ECE Networking Components
+Description: Deploy ECE Networking Components (VPC, Subnets, Routes, SGs, Internet & NAT Gateway, Flow Log)
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -177,7 +177,6 @@ Resources:
       - Key: Environment
         Value: elastic-poc
 
-
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -203,6 +202,55 @@ Resources:
     Properties:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Subnet6
+  NAT:
+     Type: AWS::EC2::NatGateway
+     Properties:
+        AllocationId:
+           Fn::GetAtt:
+           - NATElasticIP
+           - AllocationId
+        SubnetId:
+           Ref: Subnet5
+  NATRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["nat-rt-", !Ref "AWS::StackName" ]]
+      - Key: Environment
+        Value: elastic-poc
+  NATRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref NATRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NAT
+  NATElasticIP:
+    DependsOn: IGWAttachment
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NATRouteTableAssociationSubnet1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NATRouteTable
+      SubnetId: !Ref Subnet1
+  NATRouteTableAssociationSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NATRouteTable
+      SubnetId: !Ref Subnet2
+  NATRouteTableAssociationSubnet3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NATRouteTable
+      SubnetId: !Ref Subnet3
+  NATRouteTableAssociationSubnet4:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref NATRouteTable
+      SubnetId: !Ref Subnet4
   FlowLogRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -269,6 +317,12 @@ Outputs:
     Export:
       Name:
         !Sub "${AWS::StackName}-IGW"
+  NAT:
+    Description: NAT GW CrossStack ID
+    Value: !Ref NAT
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-NAT"
   Subnet1:
     Description: Subnet 1 CrossStack ID
     Value: !Ref Subnet1
