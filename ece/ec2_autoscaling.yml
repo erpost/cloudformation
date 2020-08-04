@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy ECE Compute
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "VPC Configuration"
+        Parameters:
+          - AZs
+          - VPCCidr
+          - Sub1Cidr
+          - Sub2Cidr
+      -
+        Label:
+          default: "Launch Template Configuration"
+        Parameters:
+          - LaunchTemplateName
+          - ASGName
+          - AMIID
+          - InstanceType
+          - KeyName
+
+    ParameterLabels:
+      AZs:
+        default: "Choose 2 Availability Zones"
+      VPCCidr:
+        default: "VPC CIDR Block"
+      Sub1Cidr:
+        default: "Subnet 1 CIDR Block"
+      Sub2Cidr:
+        default: "Subnet 2 CIDR Block"
+
+Parameters:
+  VPCCidr:  # VPC CIDR Block
+    Type: String
+    Default: 10.0.0.0/16
+  Sub1Cidr:  # Subnet 1 CIDR Block
+    Type: String
+    Default: 10.0.0.0/24
+  Sub2Cidr:  # Subnet 2 CIDR Block
+    Type: String
+    Default: 10.0.1.0/24
+  AZs:  # Availability Zones
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+
+  ASGName:
+    Description: Name of the EC2 AutoScaling Group
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+  LaunchTemplateName:
+    Description: Name of the EC2 Launch Template
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+  AMIID:
+    Description: ID of the EC2 AMI
+    Type: String
+  InstanceType:
+    Description: EC2 Server type
+    Type: String
+    Default: t3.nano
+    AllowedValues:
+      - t3.micro
+      - t3.nano
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+
+Resources:
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Ref LaunchTemplateName
+      LaunchTemplateData:
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
+        ImageId: !Ref AMIID
+        UserData:
+          'Fn::Base64':
+            'Fn::Join':
+              - ''
+              - - |
+                  #!/bin/bash
+                  yum -y update
+                  amazon-linux-extras install epel -y
+                  yum install -y stress
+                  stress --cpu 2 --timeout 600
+  ASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: !Ref ASGName
+      AvailabilityZones:
+        Fn::GetAZs: ""
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MinSize: "2"
+      MaxSize: "4"
+      MetricsCollection:
+        - Granularity: "1Minute"
+          Metrics:
+            - "GroupMinSize"
+            - "GroupMaxSize"
+#Outputs:
+
