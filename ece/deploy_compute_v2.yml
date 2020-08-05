@@ -13,7 +13,7 @@ Metadata:
         Label:
           default: "EC2 Configuration"
         Parameters:
-          - MgmtMasterAMIID
+          - MgmtMasterPythonAMIID
           - HotAMIID
           - WarmAMIID
           - OtherAMIIDs
@@ -35,8 +35,8 @@ Parameters:
     MinLength: '1'
     MaxLength: '255'
     AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
-  MgmtMasterAMIID:
-    Description: ID of AMI for the Management and Master Tiers
+  MgmtMasterPythonAMIID:
+    Description: ID of AMI for the Management, Master and Python Tiers
     Type: String
   HotAMIID:
     Description: ID of AMI for the Hot Tier
@@ -197,7 +197,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterAMIID
+      ImageId: !Ref MgmtMasterPythonAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az1-", !Ref "AWS::StackName" ]]
@@ -216,7 +216,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterAMIID
+      ImageId: !Ref MgmtMasterPythonAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az1-", !Ref "AWS::StackName" ]]
@@ -273,7 +273,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterAMIID
+      ImageId: !Ref MgmtMasterPythonAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az2-", !Ref "AWS::StackName" ]]
@@ -292,7 +292,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterAMIID
+      ImageId: !Ref MgmtMasterPythonAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az2-", !Ref "AWS::StackName" ]]
@@ -349,7 +349,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterAMIID
+      ImageId: !Ref MgmtMasterPythonAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
@@ -368,7 +368,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterAMIID
+      ImageId: !Ref MgmtMasterPythonAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["master1-az3-", !Ref "AWS::StackName" ]]
@@ -425,20 +425,7 @@ Resources:
         - !Ref SecurityGroupSSH
         - !Ref SecurityGroupHTTPSInbound
       KeyName: !Ref KeyName
-      ImageId: !Ref OtherAMIIDs
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: 100
-            VolumeType: gp2
-            Encrypted: true
-            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
-        - DeviceName: /dev/sdb
-          Ebs:
-            VolumeSize: 100
-            VolumeType: gp2
-            Encrypted: true
-            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+      ImageId: !Ref MgmtMasterPythonAMIID
       Tags:
         - Key: Name
           Value: !Join ['', ["python1-az1-", !Ref "AWS::StackName" ]]
@@ -579,6 +566,15 @@ Outputs:
   WarmData1AZ3PrivateIP:
     Description: Private IP of WarmData1AZ3 (Host 12)
     Value: !GetAtt WarmData1AZ3.PrivateIp
+  Python1AZ1PrivateIP:
+    Description: Private IP of Python1AZ1 (Host 13)
+    Value: !GetAtt Python1AZ1.PrivateIp
+  Logstash1AZ1PrivateIP:
+    Description: Private IP of Logstash1AZ1 (Host 17)
+    Value: !GetAtt Logstash1AZ1.PrivateIp
+  RabbitMQ1AZ1PrivateIP:
+    Description: Private IP of RabbitMQ1AZ1 (Host 17)
+    Value: !GetAtt RabbitMQ1AZ1.PrivateIp
   BastionHostPublicIP:
     Description: Public IP of Bastion Host
     Value: !GetAtt BastionHost.PublicIp
