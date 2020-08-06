@@ -45,7 +45,7 @@ Parameters:
     Description: ID of AMI for the Warm Tier
     Type: String
   OtherAMIIDs:
-    Description: ID of AMI for the Bastion/Python/Logstash/RabbitMQ Servers
+    Description: ID of AMI for the Bastion/Logstash/RabbitMQ Servers
     Type: String
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
