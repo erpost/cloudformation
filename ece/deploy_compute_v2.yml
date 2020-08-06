@@ -38,22 +38,40 @@ Parameters:
   MgmtMasterPythonAMIID:
     Description: ID of AMI for the Management, Master and Python Tiers
     Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
   HotAMIID:
     Description: ID of AMI for the Hot Tier
     Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
   WarmAMIID:
     Description: ID of AMI for the Warm Tier
     Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
   OtherAMIIDs:
     Description: ID of AMI for the Bastion/Logstash/RabbitMQ Servers
     Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: 'AWS::EC2::KeyPair::KeyName'
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
   KMSKey:
     Description: AliasName of an existing KMS Key for encrypting Volumes
     Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
   ManagementInstanceType:
     Description: Management Server type
     Type: String
