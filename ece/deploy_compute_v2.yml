@@ -11,11 +11,17 @@ Metadata:
           - NetworkStackName
       -
         Label:
+          default: "DNS Configuration"
+        Parameters:
+          - DNSPrivateZone
+      -
+        Label:
           default: "EC2 Configuration"
         Parameters:
           - MgmtMasterPythonAMIID
           - HotAMIID
           - WarmAMIID
+          - WindowsAMIID
           - OtherAMIIDs
           - KeyName
           - KMSKey
@@ -49,6 +55,12 @@ Parameters:
     AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
   WarmAMIID:
     Description: ID of AMI for the Warm Tier
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+  WindowsAMIID:
+    Description: ID of AMI for the Windows Server
     Type: String
     MinLength: '1'
     MaxLength: '255'
@@ -136,6 +148,10 @@ Parameters:
     Default: 0.0.0.0/0
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
+  DNSPrivateZone:
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
 
 Resources:
   SecurityGroupSSHInbound:
@@ -150,6 +166,19 @@ Resources:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
+          CidrIp: !Ref SSHLocation
+  SecurityGroupRDPInbound:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable RDP access via port 3389
+      GroupName: RDP External
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3389'
+          ToPort: '3389'
           CidrIp: !Ref SSHLocation
   SecurityGroupHTTPSInbound:
     Type: 'AWS::EC2::SecurityGroup'
@@ -562,53 +591,262 @@ Resources:
       Tags:
         - Key: Environment
           Value: elastic-poc
+  WindowsHost:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: t3.medium
+      SubnetId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-Subnet5"
+      SecurityGroupIds:
+        - !Ref SecurityGroupRDPInbound
+      KeyName: !Ref KeyName
+      ImageId: !Ref WindowsAMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["windows-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: Windows
+  WindowsElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref WindowsHost
+      Tags:
+        - Key: Environment
+          Value: elastic-poc
+
+  DNS:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      HostedZoneConfig:
+        Comment: 'Private Hosted Zone for ECE'
+      Name: !Ref DNSPrivateZone
+      VPCs:
+        -
+          VPCId:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPC"
+          VPCRegion: !Ref "AWS::Region"
+      HostedZoneTags:
+        -
+          Key: Name
+          Value:  !Join ['', ["dns-private-zone-", !Ref "AWS::StackName" ]]
+        -
+          Key: Environment
+          Value: elastic-poc
+  MGMT1AZ1Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["mgmt1.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt MGMT1AZ1.PrivateIp
+      TTL: '300'
+      Type: A
+  Master1AZ1Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["master1.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt Master1AZ1.PrivateIp
+      TTL: '300'
+      Type: A
+  HotData1AZ1Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["hot1.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt HotData1AZ1.PrivateIp
+      TTL: '300'
+      Type: A
+  WarmData1AZ1Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["warm1.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt WarmData1AZ1.PrivateIp
+      TTL: '300'
+      Type: A
+  MGMT1AZ2Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["mgmt2.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt MGMT1AZ2.PrivateIp
+      TTL: '300'
+      Type: A
+  Master1AZ2Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["master2.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt Master1AZ2.PrivateIp
+      TTL: '300'
+      Type: A
+  HotData1AZ2Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["hot2.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt HotData1AZ2.PrivateIp
+      TTL: '300'
+      Type: A
+  WarmData1AZ2Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["warm2.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt WarmData1AZ2.PrivateIp
+      TTL: '300'
+      Type: A
+  MGMT1AZ3Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["mgmt3.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt MGMT1AZ3.PrivateIp
+      TTL: '300'
+      Type: A
+  Master1AZ3Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["master3.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt Master1AZ3.PrivateIp
+      TTL: '300'
+      Type: A
+  HotData1AZ3Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["hot3.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt HotData1AZ3.PrivateIp
+      TTL: '300'
+      Type: A
+  WarmData1AZ3Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["warm3.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt WarmData1AZ3.PrivateIp
+      TTL: '300'
+      Type: A
+  Python1AZ1Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["python.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt Python1AZ1.PrivateIp
+      TTL: '300'
+      Type: A
+  Logstash1AZ1Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["logstash.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt Logstash1AZ1.PrivateIp
+      TTL: '300'
+      Type: A
+  RabbitMQ1AZ1Record:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["rabbit.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt RabbitMQ1AZ1.PrivateIp
+      TTL: '300'
+      Type: A
+  BastionHostRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["bastion.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt BastionHost.PrivateIp
+      TTL: '300'
+      Type: A
+  WindowsHostRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["windows.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt WindowsHost.PrivateIp
+      TTL: '300'
+      Type: A
 
 Outputs:
-  MGMT1AZ1PrivateIP:
-    Description: Private IP of MGMT1AZ1 (Host 01)
-    Value: !GetAtt MGMT1AZ1.PrivateIp
-  MGMT1AZ2PrivateIP:
-    Description: Private IP of MGMT1AZ2 (Host 02)
-    Value: !GetAtt MGMT1AZ2.PrivateIp
-  MGMT1AZ3PrivateIP:
-    Description: Private IP of MGMT1AZ3 (Host 03)
-    Value: !GetAtt MGMT1AZ3.PrivateIp
-  Master1AZ1PrivateIP:
-    Description: Private IP of Master1AZ1 (Host 04)
-    Value: !GetAtt Master1AZ1.PrivateIp
-  Master1AZ2PrivateIP:
-    Description: Private IP of Master1AZ2 (Host 05)
-    Value: !GetAtt Master1AZ2.PrivateIp
-  Master1AZ3PrivateIP:
-    Description: Private IP of Master1AZ3 (Host 06)
-    Value: !GetAtt Master1AZ3.PrivateIp
-  HotData1AZ1PrivateIP:
-    Description: Private IP of HotData1AZ1 (Host 07)
-    Value: !GetAtt HotData1AZ1.PrivateIp
-  HotData1AZ2PrivateIP:
-    Description: Private IP of HotData1AZ2 (Host 08)
-    Value: !GetAtt HotData1AZ2.PrivateIp
-  HotData1AZ3PrivateIP:
-    Description: Private IP of HotData1AZ3 (Host 09)
-    Value: !GetAtt HotData1AZ3.PrivateIp
-  WarmData1AZ1PrivateIP:
-    Description: Private IP of WarmData1AZ1 (Host 10)
-    Value: !GetAtt WarmData1AZ1.PrivateIp
-  WarmData1AZ2PrivateIP:
-    Description: Private IP of WarmData1AZ2 (Host 11)
-    Value: !GetAtt WarmData1AZ2.PrivateIp
-  WarmData1AZ3PrivateIP:
-    Description: Private IP of WarmData1AZ3 (Host 12)
-    Value: !GetAtt WarmData1AZ3.PrivateIp
-  Python1AZ1PrivateIP:
-    Description: Private IP of Python1AZ1 (Host 13)
-    Value: !GetAtt Python1AZ1.PrivateIp
-  Logstash1AZ1PrivateIP:
-    Description: Private IP of Logstash1AZ1 (Host 17)
-    Value: !GetAtt Logstash1AZ1.PrivateIp
-  RabbitMQ1AZ1PrivateIP:
-    Description: Private IP of RabbitMQ1AZ1 (Host 17)
-    Value: !GetAtt RabbitMQ1AZ1.PrivateIp
-  BastionHostPublicIP:
-    Description: Public IP of Bastion Host
-    Value: !GetAtt BastionHost.PublicIp
+  MGMT1AZ1DNS:
+    Description: DNS Record of Management 1
+    Value: !Ref MGMT1AZ1Record
+  MGMT1AZ2DNS:
+    Description: DNS Record of Management 2
+    Value: !Ref MGMT1AZ2Record
+  MGMT1AZ3DNS:
+    Description: DNS Record of Management 3
+    Value: !Ref MGMT1AZ3Record
+  Master1AZ1DNS:
+    Description: DNS Record of Master 1
+    Value: !Ref Master1AZ1Record
+  Master1AZ2DNS:
+    Description: DNS Record of Master 2
+    Value: !Ref Master1AZ2Record
+  Master1AZ3DNS:
+    Description: DNS Record of Master 3
+    Value: !Ref Master1AZ3Record
+  HotData1AZ1DNS:
+    Description: DNS Record of HotData 1
+    Value: !Ref HotData1AZ1Record
+  HotData1AZ2DNS:
+    Description: DNS Record of HotData 2
+    Value: !Ref HotData1AZ2Record
+  HotData1AZ3DNS:
+    Description: DNS Record of HotData 3
+    Value: !Ref HotData1AZ3Record
+  WarmData1AZ1DNS:
+    Description: DNS Record of WarmData 1
+    Value: !Ref WarmData1AZ1Record
+  WarmData1AZ2DNS:
+    Description: DNS Record of WarmData 2
+    Value: !Ref WarmData1AZ2Record
+  WarmData1AZ3DNS:
+    Description: DNS Record of WarmData 3
+    Value: !Ref WarmData1AZ3Record
+  Python1AZ1DNS:
+    Description: DNS Record of Python
+    Value: !Ref Python1AZ1Record
+  Logstash1AZ1DNS:
+    Description: DNS Record of Logstash
+    Value: !Ref Logstash1AZ1Record
+  RabbitMQ1AZ1DNS:
+    Description: DNS Record of RabbitMQ
+    Value: !Ref RabbitMQ1AZ1Record
+  BastionHostDNS:
+    Description: DNS Record of Bastion Server
+    Value: !Ref BastionHostRecord
+  WindowsHostDNS:
+    Description: DNS of Windows Server
+    Value: !Ref WindowsHostRecord
