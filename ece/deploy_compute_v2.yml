@@ -50,7 +50,7 @@ Parameters:
     Description: Environment Type to be deployed
     Default: development
     Type: String
-    AllowedValues: [production, dev]
+    AllowedValues: [production, development]
     ConstraintDescription: must specify development or production
   MgmtMasterPythonAMIID:
     Description: ID of AMI for the Management, Master and Python Tiers
@@ -524,7 +524,7 @@ Resources:
           mkdir /mnt/data
           echo -e "o\nn\np\n1\n\n\nw" | fdisk /dev/nvme1n1
           mkfs.xfs /dev/nvme1n1p1
-          echo "/dev/nvme1n1p1  /mnt/data  xfs     defaults,nofail,x-systemd.automount,prjquota,pquota  0 2" >> /etc/fstab
+          echo "/dev/nvme1n1p1  /mnt/data  xfs  defaults,nofail,x-systemd.automount,prjquota,pquota  0 2" >> /etc/fstab
           mount -a
       Tags:
         - Key: Name
@@ -563,7 +563,7 @@ Resources:
           mkdir /mnt/data
           echo -e "o\nn\np\n1\n\n\nw" | fdisk /dev/nvme1n1
           mkfs.xfs /dev/nvme1n1p1
-          echo "/dev/nvme1n1p1  /mnt/data  xfs     defaults,nofail,x-systemd.automount,prjquota,pquota  0 2" >> /etc/fstab
+          echo "/dev/nvme1n1p1  /mnt/data  xfs  defaults,nofail,x-systemd.automount,prjquota,pquota  0 2" >> /etc/fstab
           mount -a
       Tags:
         - Key: Name
@@ -574,15 +574,12 @@ Resources:
           Value: 17
   BastionHost:
     Type: 'AWS::EC2::Instance'
+    Condition: CreateProdResources
     Properties:
       InstanceType: t3.micro
       SubnetId:
-        !If [CreateProdResources,
           Fn::ImportValue:
             !Sub "${NetworkStackName}-Subnet4"
-        !If CreateDevResources,
-             Fn::ImportValue:
-               !Sub "${NetworkStackName}-Subnet5"]
       SecurityGroupIds:
         - !Ref SecurityGroupSSHInbound
       KeyName: !Ref KeyName
@@ -601,16 +598,70 @@ Resources:
           Value: elastic-poc
         - Key: Host
           Value: Bastion
-  BastionElasticIP:
+  ExtBastionHost:
+    Type: 'AWS::EC2::Instance'
+    Condition: CreateDevResources
+    Properties:
+      InstanceType: t3.micro
+      SubnetId:
+          Fn::ImportValue:
+            !Sub "${NetworkStackName}-Subnet5"
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSHInbound
+      KeyName: !Ref KeyName
+      ImageId: !Ref OtherAMIIDs
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["bastion-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: Bastion
+  ExtBastionElasticIP:
     Type: AWS::EC2::EIP
+    Condition: CreateDevResources
     Properties:
       Domain: vpc
-      InstanceId: !Ref BastionHost
+      InstanceId: !Ref ExtBastionHost
       Tags:
         - Key: Environment
           Value: elastic-poc
   WindowsHost:
     Type: 'AWS::EC2::Instance'
+    Condition: CreateProdResources
+    Properties:
+      InstanceType: t3.medium
+      SubnetId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-Subnet4"
+      SecurityGroupIds:
+        - !Ref SecurityGroupRDPInbound
+      KeyName: !Ref KeyName
+      ImageId: !Ref WindowsAMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp2
+            Encrypted: true
+            KmsKeyId: !Join ['', ["alias/", !Ref "KMSKey" ]]
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["windows-", !Ref "AWS::StackName" ]]
+        - Key: Environment
+          Value: elastic-poc
+        - Key: Host
+          Value: Windows
+  ExtWindowsHost:
+    Type: 'AWS::EC2::Instance'
+    Condition: CreateDevResources
     Properties:
       InstanceType: t3.medium
       SubnetId:
@@ -634,11 +685,12 @@ Resources:
           Value: elastic-poc
         - Key: Host
           Value: Windows
-  WindowsElasticIP:
+  ExtWindowsElasticIP:
     Type: AWS::EC2::EIP
+    Condition: CreateDevResources
     Properties:
       Domain: vpc
-      InstanceId: !Ref WindowsHost
+      InstanceId: !Ref ExtWindowsHost
       Tags:
         - Key: Environment
           Value: elastic-poc
@@ -799,6 +851,7 @@ Resources:
       Type: A
   BastionHostRecord:
     Type: AWS::Route53::RecordSet
+    Condition: CreateProdResources
     Properties:
       HostedZoneId: !Ref DNS
       Name: !Join ['', ["bastion.", !Ref DNSPrivateZone ]]
@@ -806,8 +859,19 @@ Resources:
         - !GetAtt BastionHost.PrivateIp
       TTL: '300'
       Type: A
+  ExtBastionHostRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDevResources
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["bastion.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt ExtBastionHost.PrivateIp
+      TTL: '300'
+      Type: A
   WindowsHostRecord:
     Type: AWS::Route53::RecordSet
+    Condition: CreateProdResources
     Properties:
       HostedZoneId: !Ref DNS
       Name: !Join ['', ["windows.", !Ref DNSPrivateZone ]]
@@ -815,56 +879,84 @@ Resources:
         - !GetAtt WindowsHost.PrivateIp
       TTL: '300'
       Type: A
+  ExtWindowsHostRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: CreateDevResources
+    Properties:
+      HostedZoneId: !Ref DNS
+      Name: !Join ['', ["windows.", !Ref DNSPrivateZone ]]
+      ResourceRecords:
+        - !GetAtt ExtWindowsHost.PrivateIp
+      TTL: '300'
+      Type: A
 
 Outputs:
   MGMT1AZ1DNS:
-    Description: DNS Record of Management 1
+    Description: Private DNS Record of Management 1
     Value: !Ref MGMT1AZ1Record
   MGMT1AZ2DNS:
-    Description: DNS Record of Management 2
+    Description: Private DNS Record of Management 2
     Value: !Ref MGMT1AZ2Record
   MGMT1AZ3DNS:
-    Description: DNS Record of Management 3
+    Description: Private DNS Record of Management 3
     Value: !Ref MGMT1AZ3Record
   Master1AZ1DNS:
-    Description: DNS Record of Master 1
+    Description: Private DNS Record of Master 1
     Value: !Ref Master1AZ1Record
   Master1AZ2DNS:
-    Description: DNS Record of Master 2
+    Description: Private DNS Record of Master 2
     Value: !Ref Master1AZ2Record
   Master1AZ3DNS:
-    Description: DNS Record of Master 3
+    Description: Private DNS Record of Master 3
     Value: !Ref Master1AZ3Record
   HotData1AZ1DNS:
-    Description: DNS Record of HotData 1
+    Description: Private DNS Record of HotData 1
     Value: !Ref HotData1AZ1Record
   HotData1AZ2DNS:
     Description: DNS Record of HotData 2
     Value: !Ref HotData1AZ2Record
   HotData1AZ3DNS:
-    Description: DNS Record of HotData 3
+    Description: Private DNS Record of HotData 3
     Value: !Ref HotData1AZ3Record
   WarmData1AZ1DNS:
-    Description: DNS Record of WarmData 1
+    Description: Private DNS Record of WarmData 1
     Value: !Ref WarmData1AZ1Record
   WarmData1AZ2DNS:
     Description: DNS Record of WarmData 2
     Value: !Ref WarmData1AZ2Record
   WarmData1AZ3DNS:
-    Description: DNS Record of WarmData 3
+    Description: Private DNS Record of WarmData 3
     Value: !Ref WarmData1AZ3Record
   Python1AZ1DNS:
-    Description: DNS Record of Python
+    Description: Private DNS Record of Python
     Value: !Ref Python1AZ1Record
   Logstash1AZ1DNS:
     Description: DNS Record of Logstash
     Value: !Ref Logstash1AZ1Record
   RabbitMQ1AZ1DNS:
-    Description: DNS Record of RabbitMQ
+    Description: Private DNS Record of RabbitMQ
     Value: !Ref RabbitMQ1AZ1Record
   BastionHostDNS:
-    Description: DNS Record of Bastion Server
+    Condition: CreateProdResources
+    Description: Private DNS Record of Bastion Server
     Value: !Ref BastionHostRecord
+  BastionHostInternalDNS:
+    Condition: CreateDevResources
+    Description: Private DNS Record of Bastion Server
+    Value: !Ref ExtBastionHostRecord
+  BastionHostPublicIP:
+    Condition: CreateDevResources
+    Description: Public IP of Bastion Server
+    Value: !GetAtt ExtBastionHost.PublicIp
   WindowsHostDNS:
-    Description: DNS of Windows Server
+    Condition: CreateProdResources
+    Description: Private DNS of Windows Server
     Value: !Ref WindowsHostRecord
+  WindowsHostInternalDNS:
+    Condition: CreateDevResources
+    Description: Private DNS Record of Windows Server
+    Value: !Ref ExtWindowsHostRecord
+  WindowsHostPublicIP:
+    Condition: CreateDevResources
+    Description: Public IP of Windows Server
+    Value: !GetAtt ExtWindowsHost.PublicIp
