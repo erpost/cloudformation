@@ -11,6 +11,11 @@ Metadata:
           - NetworkStackName
       -
         Label:
+          default: "Environment Type"
+        Parameters:
+          - EnvType
+      -
+        Label:
           default: "DNS Configuration"
         Parameters:
           - DNSPrivateZone
@@ -41,6 +46,12 @@ Parameters:
     MinLength: '1'
     MaxLength: '255'
     AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+  EnvType:
+    Description: Environment Type to be deployed
+    Default: development
+    Type: String
+    AllowedValues: [production, dev]
+    ConstraintDescription: must specify development or production
   MgmtMasterPythonAMIID:
     Description: ID of AMI for the Management, Master and Python Tiers
     Type: String
@@ -152,6 +163,9 @@ Parameters:
     Type: String
     MinLength: '1'
     MaxLength: '255'
+Conditions:
+  CreateProdResources: !Equals [!Ref EnvType, production]
+  CreateDevResources: !Equals [!Ref EnvType, development]
 
 Resources:
   SecurityGroupSSHInbound:
@@ -563,8 +577,12 @@ Resources:
     Properties:
       InstanceType: t3.micro
       SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet5"
+        !If [CreateProdResources,
+          Fn::ImportValue:
+            !Sub "${NetworkStackName}-Subnet4"
+        !If CreateDevResources,
+             Fn::ImportValue:
+               !Sub "${NetworkStackName}-Subnet5"]
       SecurityGroupIds:
         - !Ref SecurityGroupSSHInbound
       KeyName: !Ref KeyName
