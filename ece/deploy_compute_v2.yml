@@ -198,7 +198,8 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable HTTPS access via port 443
-      GroupName: HTTPS External
+#      GroupName: HTTPS External
+      GroupName: HTTPS
       VpcId:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-VPC"
@@ -207,6 +208,32 @@ Resources:
           FromPort: '443'
           ToPort: '443'
           CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: '12443'
+          ToPort: '12443'
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: '9243'
+          ToPort: '9243'
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPCCIDR"
+        - IpProtocol: tcp
+          FromPort: '12443'
+          ToPort: '12443'
+          CidrIp:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPCCIDR"
+        - IpProtocol: tcp
+          FromPort: '9243'
+          ToPort: '9243'
+          CidrIp:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPCCIDR"
   SecurityGroupSSH:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -245,6 +272,86 @@ Resources:
       IpProtocol: tcp
       FromPort: '9243'
       ToPort: '9243'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress3:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '2112'
+      ToPort: '2112'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress4:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '12191'
+      ToPort: '12201'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress5:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '19000'
+      ToPort: '19999'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress6:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '18000'
+      ToPort: '18999'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress7:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '20000'
+      ToPort: '20999'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress8:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '22191'
+      ToPort: '22195'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress9:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '21000'
+      ToPort: '21999'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress10:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '9244'
+      ToPort: '9244'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress11:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '9343'
+      ToPort: '9343'
+      SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupIngress12:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupElastic
+      IpProtocol: tcp
+      FromPort: '9043'
+      ToPort: '9043'
       SourceSecurityGroupId: !Ref SecurityGroupElastic
 
   MGMT1AZ1:
