@@ -50,7 +50,7 @@ Parameters:
     Description: Environment Type to be deployed
     Default: development
     Type: String
-    AllowedValues: [production, development]
+    AllowedValues: [test, development]
     ConstraintDescription: must specify development or production
   MgmtMasterPythonAMIID:
     Description: ID of AMI for the Management, Master and Python Tiers
