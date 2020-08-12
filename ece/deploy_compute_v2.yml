@@ -51,7 +51,7 @@ Parameters:
     Default: development
     Type: String
     AllowedValues: [test, development]
-    ConstraintDescription: must specify development or production
+    ConstraintDescription: must specify development or test
   MgmtMasterPythonAMIID:
     Description: ID of AMI for the Management, Master and Python Tiers
     Type: String
@@ -164,7 +164,7 @@ Parameters:
     MinLength: '1'
     MaxLength: '255'
 Conditions:
-  CreateProdResources: !Equals [!Ref EnvType, production]
+  CreateTestResources: !Equals [!Ref EnvType, test]
   CreateDevResources: !Equals [!Ref EnvType, development]
 
 Resources:
@@ -198,7 +198,6 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable HTTPS access via port 443
-#      GroupName: HTTPS External
       GroupName: HTTPS
       VpcId:
         Fn::ImportValue:
@@ -681,7 +680,7 @@ Resources:
           Value: 17
   BastionHost:
     Type: 'AWS::EC2::Instance'
-    Condition: CreateProdResources
+    Condition: CreateTestResources
     Properties:
       InstanceType: t3.micro
       SubnetId:
@@ -742,7 +741,7 @@ Resources:
           Value: elastic-poc
   WindowsHost:
     Type: 'AWS::EC2::Instance'
-    Condition: CreateProdResources
+    Condition: CreateTestResources
     Properties:
       InstanceType: t3.medium
       SubnetId:
@@ -958,7 +957,7 @@ Resources:
       Type: A
   BastionHostRecord:
     Type: AWS::Route53::RecordSet
-    Condition: CreateProdResources
+    Condition: CreateTestResources
     Properties:
       HostedZoneId: !Ref DNS
       Name: !Join ['', ["bastion.", !Ref DNSPrivateZone ]]
@@ -978,7 +977,7 @@ Resources:
       Type: A
   WindowsHostRecord:
     Type: AWS::Route53::RecordSet
-    Condition: CreateProdResources
+    Condition: CreateTestResources
     Properties:
       HostedZoneId: !Ref DNS
       Name: !Join ['', ["windows.", !Ref DNSPrivateZone ]]
@@ -1044,7 +1043,7 @@ Outputs:
     Description: Private DNS Record of RabbitMQ
     Value: !Ref RabbitMQ1AZ1Record
   BastionHostDNS:
-    Condition: CreateProdResources
+    Condition: CreateTestResources
     Description: Private DNS Record of Bastion Server
     Value: !Ref BastionHostRecord
   BastionHostInternalDNS:
@@ -1056,7 +1055,7 @@ Outputs:
     Description: Public IP of Bastion Server
     Value: !GetAtt ExtBastionHost.PublicIp
   WindowsHostDNS:
-    Condition: CreateProdResources
+    Condition: CreateTestResources
     Description: Private DNS of Windows Server
     Value: !Ref WindowsHostRecord
   WindowsHostInternalDNS:
