@@ -233,11 +233,11 @@ Resources:
           CidrIp:
             Fn::ImportValue:
               !Sub "${NetworkStackName}-VPCCIDR"
-  SecurityGroupSSH:
+  SecurityGroupSSHandPING:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Enable SSH access via port 22
-      GroupName: SSH Internal
+      GroupDescription: Enable SSH and PING access
+      GroupName: SSH and PING Internal
       VpcId:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-VPC"
@@ -245,6 +245,12 @@ Resources:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
+          CidrIp:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPCCIDR"
+        - IpProtocol: icmp
+          FromPort: '8'
+          ToPort: '-1'
           CidrIp:
             Fn::ImportValue:
               !Sub "${NetworkStackName}-VPCCIDR"
@@ -361,7 +367,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet1"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref MgmtMasterPythonAMIID
@@ -380,7 +386,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet1"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref MgmtMasterPythonAMIID
@@ -399,7 +405,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet1"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref HotAMIID
@@ -418,7 +424,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet1"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref WarmAMIID
@@ -437,7 +443,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet2"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref MgmtMasterPythonAMIID
@@ -456,7 +462,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet2"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref MgmtMasterPythonAMIID
@@ -475,7 +481,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet2"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref HotAMIID
@@ -494,7 +500,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet2"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref WarmAMIID
@@ -513,7 +519,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet3"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref MgmtMasterPythonAMIID
@@ -532,7 +538,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet3"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref MgmtMasterPythonAMIID
@@ -551,7 +557,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet3"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref HotAMIID
@@ -570,7 +576,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet3"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
       ImageId: !Ref WarmAMIID
@@ -589,7 +595,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet4"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupHTTPSInbound
       KeyName: !Ref KeyName
       ImageId: !Ref MgmtMasterPythonAMIID
@@ -608,7 +614,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet4"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
       KeyName: !Ref KeyName
       ImageId: !Ref OtherAMIIDs
       BlockDeviceMappings:
@@ -647,7 +653,7 @@ Resources:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-Subnet4"
       SecurityGroupIds:
-        - !Ref SecurityGroupSSH
+        - !Ref SecurityGroupSSHandPING
       KeyName: !Ref KeyName
       ImageId: !Ref OtherAMIIDs
       BlockDeviceMappings:
