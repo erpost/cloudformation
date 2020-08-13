@@ -62,25 +62,25 @@ Parameters:
       - 3653
   VPCCidr:  # VPC CIDR Block
     Type: String
-    Default: 172.29.68.0/25
+    Default: 172.29.68.0/24
   Sub1Cidr:  # Subnet 1 CIDR Block
     Type: String
-    Default: 172.29.68.0/28
+    Default: 172.29.68.0/26
   Sub2Cidr:  # Subnet 2 CIDR Block
     Type: String
-    Default: 172.29.68.16/28
+    Default: 172.29.68.64/26
   Sub3Cidr:  # Subnet 3 CIDR Block
     Type: String
-    Default: 172.29.68.32/28
+    Default: 172.29.68.128/26
   Sub4Cidr:  # Subnet 4 CIDR Block
     Type: String
-    Default: 172.29.68.48/28
+    Default: 172.29.68.192/27
   Sub5Cidr:  # Subnet 5 CIDR Block
     Type: String
-    Default: 172.29.68.64/28
+    Default: 172.29.68.224/28
   Sub6Cidr:  # Subnet 6 CIDR Block
     Type: String
-    Default: 172.29.68.80/28
+    Default: 172.29.68.240/28
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
 
@@ -287,7 +287,7 @@ Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: ECE-FlowLogsGroup
+      LogGroupName: !Join ['', [!Ref "AWS::StackName", "-log-group" ]]
       RetentionInDays: !Ref FlowLogRetentionPeriod
   VPCFlowLog:
     Type: AWS::EC2::FlowLog
