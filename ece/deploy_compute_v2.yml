@@ -368,6 +368,25 @@ Resources:
       FromPort: '9043'
       ToPort: '9043'
       SourceSecurityGroupId: !Ref SecurityGroupElastic
+  SecurityGroupALBInbound:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable access to the Application Load Balancer
+      GroupName: ALB Internal
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPCCIDR"
 
   MGMT1AZ1:
     Type: 'AWS::EC2::Instance'
@@ -1014,6 +1033,60 @@ Resources:
         - !GetAtt ExtWindowsHost.PrivateIp
       TTL: '300'
       Type: A
+
+  AppLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      Name: !Join ['', ["alb-", !Ref "AWS::StackName" ]]
+      Scheme: internal
+      SecurityGroups:
+        - !Ref SecurityGroupALBInbound
+      Subnets:
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-Subnet1"
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-Subnet2"
+        - Fn::ImportValue:
+            !Sub "${NetworkStackName}-Subnet3"
+      Tags:
+        - Key: Environment
+          Value: elastic-poc
+      Type: application
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref AppLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      Name: !Join ['', ["targetgroup-", !Ref "AWS::StackName" ]]
+      Port: 80
+      Protocol: HTTP
+      Tags:
+        - Key: Environment
+          Value: elastic-poc
+      Targets:
+        - Id: !Ref MGMT1AZ1
+        - Id: !Ref MGMT1AZ2
+        - Id: !Ref MGMT1AZ3
+      TargetType: instance
+      UnhealthyThresholdCount: 2
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-VPC"
 
 Outputs:
   MGMT1AZ1DNS:
