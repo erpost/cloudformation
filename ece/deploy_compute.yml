@@ -1087,6 +1087,11 @@ Resources:
       VpcId:
         Fn::ImportValue:
           !Sub "${NetworkStackName}-VPC"
+  ALBCert:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: test.devcde.net
+      ValidationMethod: DNS
 
 Outputs:
   MGMT1AZ1DNS:
