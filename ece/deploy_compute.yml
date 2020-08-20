@@ -1041,7 +1041,16 @@ Resources:
         - !GetAtt ExtWindowsHost.PrivateIp
       TTL: '300'
       Type: A
-
+#  WildCardRecord:
+#    Type: AWS::Route53::RecordSet
+#    Properties:
+#      Region: !Ref "AWS::Region"
+#      HostedZoneId: Z0817146216JD4NGFX3K2
+#      Name: !Join ['', ["*.", !Ref Domain ]]
+#      ResourceRecords:
+#        - !GetAtt AppLoadBalancer.DNSName
+#      TTL: '300'
+#      Type: A
   AppLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -1074,6 +1083,8 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       LoadBalancerArn: !Ref AppLoadBalancer
+      Certificates:
+        - CertificateArn: !Ref ALBCert
       Port: 443
       Protocol: HTTPS
       DefaultActions:
