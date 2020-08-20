@@ -1098,7 +1098,7 @@ Resources:
   ALBCert:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Join ['', ["*", !Ref Domain ]]
+      DomainName: !Join ['', ["*.", !Ref Domain ]]
       ValidationMethod: DNS
 
 Outputs:
