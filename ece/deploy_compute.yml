@@ -1049,10 +1049,8 @@ Resources:
       - Name: !Join ['', ["*.", !Ref Domain, "."]]
         Type: A
         AliasTarget:
-          HostedZoneId:
-            - !GetAtt AppLoadBalancer.CanonicalHostedZoneID
-          DNSName:
-            - !GetAtt AppLoadBalancer.DNSName
+          HostedZoneId: !GetAtt AppLoadBalancer.CanonicalHostedZoneID
+          DNSName: !GetAtt AppLoadBalancer.DNSName
           EvaluateTargetHealth: 'True'
   AppLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
