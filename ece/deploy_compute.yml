@@ -1044,19 +1044,15 @@ Resources:
   WildCardRecord:
     Type: AWS::Route53::RecordSetGroup
     Properties:
-      HostedZoneName: example.com.
+      HostedZoneName: !Join ['', [!Ref Domain, "."]]
       RecordSets:
       - Name: !Join ['', ["*.", !Ref Domain, "."]]
         Type: A
         AliasTarget:
           HostedZoneId:
-            Fn::GetAtt:
-            - AppLoadBalancer
-            - CanonicalHostedZoneNameID
+            - !GetAtt AppLoadBalancer.CanonicalHostedZoneNameID
           DNSName:
-            Fn::GetAtt:
-            - AppLoadBalancer
-            - DNSName
+            - !GetAtt: AppLoadBalancer.DNSName
           EvaluateTargetHealth: 'True'
   AppLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
