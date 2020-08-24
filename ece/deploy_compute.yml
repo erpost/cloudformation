@@ -1046,7 +1046,7 @@ Resources:
     Properties:
       HostedZoneName: example.com.
       RecordSets:
-      - Name: !Join ['', ["*.", !Ref Domain, "."
+      - Name: !Join ['', ["*.", !Ref Domain, "."]
         Type: A
         AliasTarget:
           HostedZoneId:
