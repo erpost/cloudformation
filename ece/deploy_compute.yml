@@ -1047,8 +1047,8 @@ Resources:
       HostedZoneName: !Join ['', [!Ref Domain, "."]]
       RecordSets:
       - Name: !Join ['', ["*.", !Ref Domain, "."]]
-        Type: A
-        AliasTarget:
+      - Type: A
+      - AliasTarget:
           HostedZoneId:
             - !GetAtt MyLoadBalancer.CanonicalHostedZoneNameID
           DNSName:
