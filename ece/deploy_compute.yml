@@ -224,6 +224,10 @@ Resources:
           ToPort: '12443'
           CidrIp: !Ref SSHLocation
         - IpProtocol: tcp
+          FromPort: '9200'
+          ToPort: '9200'
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
           FromPort: '9243'
           ToPort: '9243'
           CidrIp: !Ref SSHLocation
@@ -246,6 +250,12 @@ Resources:
             Fn::ImportValue:
               !Sub "${NetworkStackName}-VPCCIDR"
         - IpProtocol: tcp
+          FromPort: '9200'
+          ToPort: '9200'
+          CidrIp:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPCCIDR"
+        - IpProtocol: tcp
           FromPort: '9243'
           ToPort: '9243'
           CidrIp:
@@ -263,9 +273,9 @@ Resources:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
-          CidrIp:
-            Fn::ImportValue:
-              !Sub "${NetworkStackName}-VPCCIDR"
+          CidrIp: 0.0.0.0/0
+#            Fn::ImportValue:
+#              !Sub "${NetworkStackName}-VPCCIDR"
         - IpProtocol: icmp
           FromPort: '8'
           ToPort: '-1'
@@ -386,25 +396,9 @@ Resources:
           !Sub "${NetworkStackName}-VPC"
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
-          CidrIp: !Ref SSHLocation
-        - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
-          CidrIp:
-            Fn::ImportValue:
-              !Sub "${NetworkStackName}-VPCCIDR"
-        - IpProtocol: tcp
           FromPort: '9243'
           ToPort: '9243'
           CidrIp: !Ref SSHLocation
-        - IpProtocol: tcp
-          FromPort: '9243'
-          ToPort: '9243'
-          CidrIp:
-            Fn::ImportValue:
-              !Sub "${NetworkStackName}-VPCCIDR"
 
   MGMT1AZ1:
     Type: 'AWS::EC2::Instance'
@@ -1081,15 +1075,6 @@ Resources:
         - Key: Environment
           Value: elastic-poc
       Type: application
-  ALBListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref AppLoadBalancer
-      Port: 80
-      Protocol: HTTP
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroup
   ALBListenerHTTPS:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -1107,12 +1092,12 @@ Resources:
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /
-      HealthCheckPort: 80
+      HealthCheckPort: 9200
       HealthCheckProtocol: HTTP
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 5
       Name: !Join ['', ["targetgroup-", !Ref "AWS::StackName" ]]
-      Port: 80
+      Port: 9200
       Protocol: HTTP
       Tags:
         - Key: Environment
