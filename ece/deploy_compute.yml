@@ -396,12 +396,12 @@ Resources:
             Fn::ImportValue:
               !Sub "${NetworkStackName}-VPCCIDR"
         - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
+          FromPort: '9243'
+          ToPort: '9243'
           CidrIp: !Ref SSHLocation
         - IpProtocol: tcp
-          FromPort: '443'
-          ToPort: '443'
+          FromPort: '9243'
+          ToPort: '9243'
           CidrIp:
             Fn::ImportValue:
               !Sub "${NetworkStackName}-VPCCIDR"
@@ -1096,7 +1096,7 @@ Resources:
       LoadBalancerArn: !Ref AppLoadBalancer
       Certificates:
         - CertificateArn: !Ref ALBCert
-      Port: 443
+      Port: 9243
       Protocol: HTTPS
       DefaultActions:
         - Type: forward
