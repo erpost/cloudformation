@@ -1092,8 +1092,8 @@ Resources:
       HealthCheckEnabled: true
       HealthCheckIntervalSeconds: 30
       HealthCheckPath: /
-      HealthCheckPort: 9200
-      HealthCheckProtocol: HTTP
+      HealthCheckPort: 12443
+      HealthCheckProtocol: HTTPS
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 5
       Name: !Join ['', ["targetgroup-", !Ref "AWS::StackName" ]]
