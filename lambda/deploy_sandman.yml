@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy Lambda Functionn to shutdown EC2 instances at a set time
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Lambda Configuration"
+        Parameters:
+          - KeyName
+          - KeyValue
+          - StopTime
+
+    ParameterLabels:
+      KeyName:
+        default: "Tag Key Name"
+      KeyValue:
+        default: "Tag Key Value"
+      StopTime:
+        default: "Instance Shutoff Time (Default: 7:30pm EST)"
+
+Parameters:
+  KeyName:
+    Type: String
+    Default: sandman
+  KeyValue:
+    Type: String
+    Default: true
+  StopTime:
+    Type: String
+    Default: cron(30 23 * * ? *)
+
+Resources:
+  LambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "lambdapolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+              - "ec2:DescribeInstances"
+              - "ec2:StopInstances"
+              - "ec2:DescribeInstanceStatus"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "LambdaRole"
+
+  LambdaSandman:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          def lambda_handler(event, context):
+              running_ids = []
+              ec2 = boto3.resource('ec2')
+
+              running_instances = ec2.instances.filter(
+                                  Filters=[{'Name': 'instance-state-name', 'Values': ['running']},
+                                           {'Name': 'tag:sandman', 'Values': ['true']}
+                                           ])
+              for running_instance in running_instances:
+                      running_ids.append(running_instance.id)
+              if len(running_ids) < 1:
+                  print('No running instances')
+              else:
+                  print('Running instances that were shut down:')
+                  for running_id in running_ids:
+                      print(running_id)
+
+                  ec2.instances.filter(InstanceIds=running_ids).stop()
+      Description: Lambda Function to Stop EC2 Instances
+      FunctionName: !Ref "AWS::StackName"
+      Handler: 'index.lambda_handler'
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.7
+      Timeout: 20
