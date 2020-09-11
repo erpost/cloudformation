@@ -111,16 +111,35 @@ Resources:
               for running_instance in running_instances:
                       running_ids.append(running_instance.id)
               if len(running_ids) < 1:
-                  print('No running instances')
+                  print('No eligible running instances')
               else:
-                  print('Running instances that were shut down:')
+                  print('The following eligible running instances were shut down:')
                   for running_id in running_ids:
                       print(running_id)
 
                   ec2.instances.filter(InstanceIds=running_ids).stop()
-      Description: Lambda Function to Stop EC2 Instances
+      Description: Lambda Function to shutdown EC2 instances at a set time each night
       FunctionName: !Ref "AWS::StackName"
       Handler: 'index.lambda_handler'
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.7
       Timeout: 20
+
+  ScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Join ['', ["scheduled-rule-", !Ref "AWS::StackName" ]]
+      Description: "Scheduled Event Rule"
+      ScheduleExpression: !Ref StopTime
+      State: "ENABLED"
+      Targets:
+        -
+          Arn: !GetAtt LambdaSandman.Arn
+          Id: Id345
+  PermissionForEventsToInvokeLambda:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref "AWS::StackName"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRule.Arn
