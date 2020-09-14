@@ -12,7 +12,7 @@ Metadata:
           - StopTime
       -
         Label:
-          default: "Instance Stop Configuration"
+          default: "Instance Start Configuration"
         Parameters:
           - StartStatus
           - StartTime
