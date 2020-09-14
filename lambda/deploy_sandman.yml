@@ -6,11 +6,22 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          default: "Lambda Configuration"
+          default: "Instance Stop Configuration"
+        Parameters:
+          - StopStatus
+          - StopTime
+      -
+        Label:
+          default: "Instance Stop Configuration"
+        Parameters:
+          - StartStatus
+          - StartTime
+      -
+        Label:
+          defautl: "Additional Parameters"
         Parameters:
           - KeyName
           - KeyValue
-          - StopTime
           - FlowLogRetentionPeriod
 
     ParameterLabels:
@@ -19,9 +30,13 @@ Metadata:
       KeyValue:
         default: "Tag Key Value"
       StopTime:
-        default: "Instance Shutoff Time.  Default is Monday-Friday 22:00 UTC (5:00pm EST/4:00pm EDT)"
+        default: "Instance Shutdown Time.  Default is Monday-Friday 22:00 UTC (5:00pm EST/4:00pm EDT)"
+      StopStatus:
+        default: "Determines whether the instances will be stopped each day (either ENABLED or DISABLED)"
       StartTime:
         default: "Instance Shutoff Time.  Default is Monday-Friday 14:00 UTC (9:00am EST/8:00am EDT)"
+      StartStatus:
+        default: "Determines whether the instances will be started each day (either ENABLED or DISABLED)"
 
 Parameters:
   KeyName:
@@ -33,9 +48,15 @@ Parameters:
   StopTime:
     Type: String
     Default: cron(00 22 ? * MON-FRI *)
+  StopStatus:
+    Type: String
+    Default: ENABLED
   StartTime:
     Type: String
     Default: cron(00 14 ? * MON-FRI *)
+  StartStatus:
+    Type: String
+    Default: ENABLED
   FlowLogRetentionPeriod: # CloudWatch Log Group Retention Period
     Type: String
     Default: 90
@@ -88,18 +109,24 @@ Resources:
               - "logs:PutLogEvents"
               - "ec2:DescribeInstances"
               - "ec2:StopInstances"
+              - "ec2:StartInstances"
               - "ec2:DescribeInstanceStatus"
             Resource: "*"
       Roles:
         -
           Ref: "LambdaRole"
-  LogGroup:
+  LogGroupStop:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['', ["/aws/lambda/", !Ref "AWS::StackName" ]]
+      LogGroupName: !Join ['', ["/aws/lambda/", !Ref "AWS::StackName", "-stop" ]]
+      RetentionInDays: !Ref FlowLogRetentionPeriod
+  LogGroupStart:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['', ["/aws/lambda/", !Ref "AWS::StackName", "-start" ]]
       RetentionInDays: !Ref FlowLogRetentionPeriod
 
-  LambdaSandman:
+  LambdaSandmanStop:
     Type: AWS::Lambda::Function
     Properties:
       Code:
@@ -124,27 +151,77 @@ Resources:
 
                   ec2.instances.filter(InstanceIds=running_ids).stop()
       Description: Lambda Function to shutdown EC2 instances at a set time each night
-      FunctionName: !Ref "AWS::StackName"
+      FunctionName: !Join ['', [ !Ref "AWS::StackName", "-stop" ]]
       Handler: 'index.lambda_handler'
       Role: !GetAtt LambdaRole.Arn
       Runtime: python3.7
       Timeout: 20
 
-  ScheduledRule:
+  ScheduledRuleStop:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Join ['', ["scheduled-rule-", !Ref "AWS::StackName" ]]
-      Description: "Scheduled Event Rule"
+      Name: !Join ['', ["scheduled-rule-", !Ref "AWS::StackName", "-stop" ]]
+      Description: "Scheduled Stop Event Rule"
       ScheduleExpression: !Ref StopTime
-      State: "ENABLED"
+      State: !Ref StopStatus
       Targets:
         -
-          Arn: !GetAtt LambdaSandman.Arn
-          Id: Id345
-  PermissionForEventsToInvokeLambda:
+          Arn: !GetAtt LambdaSandmanStop.Arn
+          Id: Id123
+  PermissionForEventsToInvokeLambdaStop:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref "AWS::StackName"
+      FunctionName: !Ref LambdaSandmanStop
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
-      SourceArn: !GetAtt ScheduledRule.Arn
+      SourceArn: !GetAtt ScheduledRuleStop.Arn
+
+  LambdaSandmanStart:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          def lambda_handler(event, context):
+              stopped_ids = []
+              ec2 = boto3.resource('ec2')
+
+              stopped_instances = ec2.instances.filter(
+                                  Filters=[{'Name': 'instance-state-name', 'Values': ['stopped']},
+                                           {'Name': 'tag:sandman', 'Values': ['true']}
+                                           ])
+              for stopped_instance in stopped_instances:
+                      stopped_ids.append(stopped_instance.id)
+              if len(stopped_ids) < 1:
+                  print('No eligible stopped instances')
+              else:
+                  print('The following eligible stopped instances were started:')
+                  for stopped_id in stopped_ids:
+                      print(stopped_id)
+
+                  ec2.instances.filter(InstanceIds=stopped_ids).start()
+      Description: Lambda Function to startup EC2 instances at a set time each day
+      FunctionName: !Join ['', [ !Ref "AWS::StackName", "-start" ]]
+      Handler: 'index.lambda_handler'
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.7
+      Timeout: 20
+
+  ScheduledRuleStart:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Join ['', ["scheduled-rule-", !Ref "AWS::StackName", "-start" ]]
+      Description: "Scheduled Start Event Rule"
+      ScheduleExpression: !Ref StartTime
+      State: !Ref StartStatus
+      Targets:
+        -
+          Arn: !GetAtt LambdaSandmanStart.Arn
+          Id: Id456
+  PermissionForEventsToInvokeLambdaStart:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaSandmanStart
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRuleStart.Arn
