@@ -34,7 +34,7 @@ Metadata:
       StopStatus:
         default: "Determines whether the instances will be stopped each day (either ENABLED or DISABLED)"
       StartTime:
-        default: "Instance Startup Time.  Default is Monday-Friday 14:00 UTC (9:00am EST/8:00am EDT)"
+        default: "Instance Startup Time.  Default is Monday-Friday 13:00 UTC (9:00am EST/8:00am EDT)"
       StartStatus:
         default: "Determines whether the instances will be started each day (either ENABLED or DISABLED)"
 
