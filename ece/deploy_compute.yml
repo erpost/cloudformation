@@ -273,9 +273,9 @@ Resources:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
-          CidrIp: 0.0.0.0/0
-#            Fn::ImportValue:
-#              !Sub "${NetworkStackName}-VPCCIDR"
+          CidrIp:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPCCIDR"
         - IpProtocol: icmp
           FromPort: '8'
           ToPort: '-1'
