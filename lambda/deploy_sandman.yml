@@ -18,7 +18,7 @@ Metadata:
           - StartTime
       -
         Label:
-          defautl: "Additional Parameters"
+          default: "Additional Parameters"
         Parameters:
           - KeyName
           - KeyValue
