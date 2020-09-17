@@ -56,7 +56,7 @@ Parameters:
     Default: cron(00 13 ? * MON-FRI *)
   StartStatus:
     Type: String
-    Default: ENABLED
+    Default: DISABLED
   FlowLogRetentionPeriod: # CloudWatch Log Group Retention Period
     Type: String
     Default: 90
@@ -150,7 +150,7 @@ Resources:
   ScheduledRuleStop:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Join ['', ["scheduled-rule-", !Ref "AWS::StackName", "-stop" ]]
+      Name: "scheduled-rule-stop"
       Description: "Scheduled Stop Event Rule"
       ScheduleExpression: !Ref StopTime
       State: !Ref StopStatus
@@ -200,7 +200,7 @@ Resources:
   ScheduledRuleStart:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Join ['', ["scheduled-rule-", !Ref "AWS::StackName", "-start" ]]
+      Name: "scheduled-rule-start"
       Description: "Scheduled Start Event Rule"
       ScheduleExpression: !Ref StartTime
       State: !Ref StartStatus
