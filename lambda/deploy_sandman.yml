@@ -108,12 +108,12 @@ Resources:
   LogGroupStop:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['', ["/aws/lambda/", !Ref "AWS::StackName", "-stop" ]]
+      LogGroupName: !Join ['', ["/aws/lambda/", !Ref KeyName, "-stop" ]]
       RetentionInDays: !Ref FlowLogRetentionPeriod
   LogGroupStart:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Join ['', ["/aws/lambda/", !Ref "AWS::StackName", "-start" ]]
+      LogGroupName: !Join ['', ["/aws/lambda/", !Ref KeyName, "-start" ]]
       RetentionInDays: !Ref FlowLogRetentionPeriod
 
   LambdaSandmanStop:

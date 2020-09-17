@@ -24,6 +24,7 @@ Metadata:
         Label:
           default: "EC2 Configuration"
         Parameters:
+          - S3BackupBucket
           - MgmtMasterPythonAMIID
           - HotAMIID
           - WarmAMIID
@@ -54,6 +55,12 @@ Parameters:
     AllowedValues: [test, development]
     ConstraintDescription: must specify development or test
 
+  S3BackupBucket:
+    Description: Pre-created S3 Bucket to be used for Hot/Warm Tier Backups
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    Default: ece-poc-backups
   MgmtMasterPythonAMIID:
     Description: ID of AMI for the Management, Master and Python Tiers
     Type: String
@@ -450,6 +457,7 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: !Ref HotAMIID
       Tags:
         - Key: Name
@@ -469,6 +477,7 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: !Ref WarmAMIID
       Tags:
         - Key: Name
@@ -527,6 +536,7 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: !Ref HotAMIID
       Tags:
         - Key: Name
@@ -546,6 +556,7 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: !Ref WarmAMIID
       Tags:
         - Key: Name
@@ -604,6 +615,7 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: !Ref HotAMIID
       Tags:
         - Key: Name
@@ -623,6 +635,7 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: !Ref WarmAMIID
       Tags:
         - Key: Name
@@ -1116,6 +1129,55 @@ Resources:
     Properties:
       DomainName: !Join ['', ["*.", !Ref Domain ]]
       ValidationMethod: DNS
+
+  Ec2ProfileRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "ec2profilepolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "s3:ListBucket"
+              - "s3:GetBucketLocation"
+              - "s3:ListBucketMultipartUploads"
+              - "s3:ListBucketVersions"
+            Resource: !Join ['', ["arn:aws:s3:::", !Ref S3BackupBucket ]]
+          -
+            Effect: "Allow"
+            Action:
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:DeleteObject"
+              - "s3:AbortMultipartUpload"
+              - "s3:ListMultipartUploadParts"
+            Resource: !Join ['', ["arn:aws:s3:::", !Ref S3BackupBucket, "/*" ]]
+      Roles:
+        -
+          Ref: "Ec2ProfileRole"
+  Ec2InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: "/"
+      Roles:
+        -
+          Ref: "Ec2ProfileRole"
 
 Outputs:
   MGMT1AZ1DNS:
