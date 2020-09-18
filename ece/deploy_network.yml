@@ -251,6 +251,14 @@ Resources:
     Properties:
       RouteTableId: !Ref NATRouteTable
       SubnetId: !Ref Subnet4
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+        - !Ref NATRouteTable
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref VPC
+
   FlowLogRole:
     Type: "AWS::IAM::Role"
     Properties:
