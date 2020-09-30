@@ -1,0 +1,31 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "DeployECECompute",
+            "Effect": "Allow",
+            "Action": [
+                "acm:*",
+                "ec2:*",
+                "elasticloadbalancing:*",
+                "iam:PutRolePolicy",
+                "iam:AddRoleToInstanceProfile",
+                "iam:CreateInstanceProfile",
+                "iam:CreatePolicyVersion",
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:DeleteRolePolicy",
+                "iam:DeleteInstanceProfile",
+                "iam:Describe*",
+                "iam:Get*",
+                "iam:List*",
+                "iam:PassRole",
+                "iam:RemoveRoleFromInstanceProfile",
+                "kms:*",
+                "logs:*",
+                "route53:*"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
