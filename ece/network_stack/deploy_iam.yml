@@ -39,7 +39,7 @@ Resources:
 Outputs:
   FlowLogRole:
     Description: FlowLog Role CrossStack ID
-    Value: !Ref FlowLogRole
+    Value: !GetAtt FlowLogRole.Arn
     Export:
       Name:
         !Sub "${AWS::StackName}-FlowLogRole"

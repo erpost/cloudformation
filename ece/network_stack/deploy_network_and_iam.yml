@@ -17,7 +17,6 @@ Metadata:
           - Sub4Cidr
           - Sub5Cidr
           - Sub6Cidr
-          - IAMS
 
     ParameterLabels:
       AZs:
@@ -260,6 +259,39 @@ Resources:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
       VpcId: !Ref VPC
 
+  FlowLogRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "vpc-flow-logs.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "flowlogpolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:DescribeLogGroups"
+              - "logs:DescribeLogStreams"
+              - "logs:PutLogEvents"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "FlowLogRole"
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -268,7 +300,7 @@ Resources:
   VPCFlowLog:
     Type: AWS::EC2::FlowLog
     Properties:
-      DeliverLogsPermissionArn:
+      DeliverLogsPermissionArn: !GetAtt FlowLogRole.Arn
       LogGroupName: !Ref LogGroup
       ResourceId: !Ref VPC
       ResourceType: VPC
