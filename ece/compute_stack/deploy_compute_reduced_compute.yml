@@ -99,18 +99,19 @@ Parameters:
   ManagementInstanceType:
     Description: Management Server type
     Type: String
-    Default: m5.2xlarge
+    Default: m5ad.2xlarge
     AllowedValues:
       - t3.micro
-      - m5.2xlarge
+      - m5ad.2xlarge
+      - m5ad.4xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   HotDataInstanceType:
     Description: Hot Data Server type
     Type: String
-    Default: r5.2xlarge
+    Default: r5ad.4xlarge
     AllowedValues:
       - t3.micro
-      - r5.2xlarge
+      - r5ad.4xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   PythonInstanceType:
     Description: Python Server type
