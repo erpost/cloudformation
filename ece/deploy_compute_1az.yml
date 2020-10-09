@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy ECE Compute Components with Separate AMIs for each Compute Tier
+Description: Deploy ECE Compute Components in 1 Availability Zone with Separate AMIs for each Compute Tier
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -8,6 +8,7 @@ Metadata:
         Label:
           default: "CrossStack Reference"
         Parameters:
+          - IAMStackName
           - NetworkStackName
       -
         Label:
@@ -24,7 +25,6 @@ Metadata:
         Label:
           default: "EC2 Configuration"
         Parameters:
-          - S3BackupBucket
           - MgmtMasterPythonAMIID
           - HotAMIID
           - WarmAMIID
@@ -42,6 +42,12 @@ Metadata:
           - SSHLocation
 
 Parameters:
+  IAMStackName:
+    Description: Name of an active CloudFormation Stack that contains the IAM Resources
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
   NetworkStackName:
     Description: Name of an active CloudFormation Stack that contains the Networking Resources
     Type: String
@@ -54,13 +60,6 @@ Parameters:
     Type: String
     AllowedValues: [test, development]
     ConstraintDescription: must specify development or test
-
-  S3BackupBucket:
-    Description: Pre-created S3 Bucket to be used for Hot/Warm Tier Backups
-    Type: String
-    MinLength: '1'
-    MaxLength: '255'
-    Default: ece-poc-backups
   MgmtMasterPythonAMIID:
     Description: ID of AMI for the Management, Master and Python Tiers
     Type: String
@@ -457,7 +456,9 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref Ec2InstanceProfile
+      IamInstanceProfile:
+        Fn::ImportValue:
+          !Sub "${IAMStackName}-EC2InstanceProfile"
       ImageId: !Ref HotAMIID
       Tags:
         - Key: Name
@@ -477,7 +478,9 @@ Resources:
         - !Ref SecurityGroupSSHandPING
         - !Ref SecurityGroupElastic
       KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref Ec2InstanceProfile
+      IamInstanceProfile:
+        Fn::ImportValue:
+          !Sub "${IAMStackName}-EC2InstanceProfile"
       ImageId: !Ref WarmAMIID
       Tags:
         - Key: Name
@@ -486,164 +489,6 @@ Resources:
           Value: elastic-poc
         - Key: Host
           Value: 10
-  MGMT1AZ2:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref ManagementInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet2"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupHTTPSInbound
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterPythonAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["mgmt1-az2-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 2
-  Master1AZ2:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref MasterInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet2"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterPythonAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["master1-az2-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 5
-  HotData1AZ2:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref HotDataInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet2"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref Ec2InstanceProfile
-      ImageId: !Ref HotAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["hotdata1-az2-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 8
-  WarmData1AZ2:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref WarmDataInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet2"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref Ec2InstanceProfile
-      ImageId: !Ref WarmAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["warmdata1-az2-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 11
-  MGMT1AZ3:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref ManagementInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet3"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupHTTPSInbound
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterPythonAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["mgmt1-az3-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 3
-  Master1AZ3:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref MasterInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet3"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      ImageId: !Ref MgmtMasterPythonAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["master1-az3-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 6
-  HotData1AZ3:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref HotDataInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet3"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref Ec2InstanceProfile
-      ImageId: !Ref HotAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["hotdata1-az3-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 9
-  WarmData1AZ3:
-    Type: 'AWS::EC2::Instance'
-    Properties:
-      InstanceType: !Ref WarmDataInstanceType
-      SubnetId:
-        Fn::ImportValue:
-          !Sub "${NetworkStackName}-Subnet3"
-      SecurityGroupIds:
-        - !Ref SecurityGroupSSHandPING
-        - !Ref SecurityGroupElastic
-      KeyName: !Ref KeyName
-      IamInstanceProfile: !Ref Ec2InstanceProfile
-      ImageId: !Ref WarmAMIID
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["warmdata1-az3-", !Ref "AWS::StackName" ]]
-        - Key: Environment
-          Value: elastic-poc
-        - Key: Host
-          Value: 9
   Python1AZ1:
     Type: 'AWS::EC2::Instance'
     Properties:
@@ -919,78 +764,6 @@ Resources:
         - !GetAtt WarmData1AZ1.PrivateIp
       TTL: '300'
       Type: A
-  MGMT1AZ2Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["mgmt2.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt MGMT1AZ2.PrivateIp
-      TTL: '300'
-      Type: A
-  Master1AZ2Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["master2.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt Master1AZ2.PrivateIp
-      TTL: '300'
-      Type: A
-  HotData1AZ2Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["hot2.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt HotData1AZ2.PrivateIp
-      TTL: '300'
-      Type: A
-  WarmData1AZ2Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["warm2.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt WarmData1AZ2.PrivateIp
-      TTL: '300'
-      Type: A
-  MGMT1AZ3Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["mgmt3.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt MGMT1AZ3.PrivateIp
-      TTL: '300'
-      Type: A
-  Master1AZ3Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["master3.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt Master1AZ3.PrivateIp
-      TTL: '300'
-      Type: A
-  HotData1AZ3Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["hot3.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt HotData1AZ3.PrivateIp
-      TTL: '300'
-      Type: A
-  WarmData1AZ3Record:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      HostedZoneId: !Ref DNS
-      Name: !Join ['', ["warm3.", !Ref DNSPrivateZone ]]
-      ResourceRecords:
-        - !GetAtt WarmData1AZ3.PrivateIp
-      TTL: '300'
-      Type: A
   Python1AZ1Record:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -1117,8 +890,6 @@ Resources:
           Value: elastic-poc
       Targets:
         - Id: !Ref MGMT1AZ1
-        - Id: !Ref MGMT1AZ2
-        - Id: !Ref MGMT1AZ3
       TargetType: instance
       UnhealthyThresholdCount: 2
       VpcId:
@@ -1130,92 +901,21 @@ Resources:
       DomainName: !Join ['', ["*.", !Ref Domain ]]
       ValidationMethod: DNS
 
-  Ec2ProfileRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Principal:
-              Service:
-                - "ec2.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      Path: "/"
-  RolePolicies:
-    Type: "AWS::IAM::Policy"
-    Properties:
-      PolicyName: "ec2profilepolicy"
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: "Allow"
-            Action:
-              - "s3:ListBucket"
-              - "s3:GetBucketLocation"
-              - "s3:ListBucketMultipartUploads"
-              - "s3:ListBucketVersions"
-            Resource: !Join ['', ["arn:aws:s3:::", !Ref S3BackupBucket ]]
-          -
-            Effect: "Allow"
-            Action:
-              - "s3:GetObject"
-              - "s3:PutObject"
-              - "s3:DeleteObject"
-              - "s3:AbortMultipartUpload"
-              - "s3:ListMultipartUploadParts"
-            Resource: !Join ['', ["arn:aws:s3:::", !Ref S3BackupBucket, "/*" ]]
-      Roles:
-        -
-          Ref: "Ec2ProfileRole"
-  Ec2InstanceProfile:
-    Type: "AWS::IAM::InstanceProfile"
-    Properties:
-      Path: "/"
-      Roles:
-        -
-          Ref: "Ec2ProfileRole"
+
 
 Outputs:
   MGMT1AZ1DNS:
     Description: Private DNS Record of Management 1
     Value: !Ref MGMT1AZ1Record
-  MGMT1AZ2DNS:
-    Description: Private DNS Record of Management 2
-    Value: !Ref MGMT1AZ2Record
-  MGMT1AZ3DNS:
-    Description: Private DNS Record of Management 3
-    Value: !Ref MGMT1AZ3Record
   Master1AZ1DNS:
     Description: Private DNS Record of Master 1
     Value: !Ref Master1AZ1Record
-  Master1AZ2DNS:
-    Description: Private DNS Record of Master 2
-    Value: !Ref Master1AZ2Record
-  Master1AZ3DNS:
-    Description: Private DNS Record of Master 3
-    Value: !Ref Master1AZ3Record
   HotData1AZ1DNS:
     Description: Private DNS Record of HotData 1
     Value: !Ref HotData1AZ1Record
-  HotData1AZ2DNS:
-    Description: DNS Record of HotData 2
-    Value: !Ref HotData1AZ2Record
-  HotData1AZ3DNS:
-    Description: Private DNS Record of HotData 3
-    Value: !Ref HotData1AZ3Record
   WarmData1AZ1DNS:
     Description: Private DNS Record of WarmData 1
     Value: !Ref WarmData1AZ1Record
-  WarmData1AZ2DNS:
-    Description: DNS Record of WarmData 2
-    Value: !Ref WarmData1AZ2Record
-  WarmData1AZ3DNS:
-    Description: Private DNS Record of WarmData 3
-    Value: !Ref WarmData1AZ3Record
   Python1AZ1DNS:
     Description: Private DNS Record of Python
     Value: !Ref Python1AZ1Record
