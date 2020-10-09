@@ -940,8 +940,6 @@ Resources:
       DomainName: !Join ['', ["*.", !Ref Domain ]]
       ValidationMethod: DNS
 
-
-
 Outputs:
   MGMT1AZ1DNS:
     Description: Private DNS Record of Management 1
