@@ -96,9 +96,24 @@ Resources:
     Properties:
       GroupName: "CloudFormationDeployers"
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/ReadOnlyAccess
         - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
+        - !Ref S3CloudFormationPolicy
+
+  S3CloudFormationPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      Description: S3 Permissions for deploying CloudFormation
+      ManagedPolicyName: S3CloudFormationPolicy
+      Path: /
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              s3:*
+            Resource: "arn:aws:s3:::cf-templates-*"
 
   Ec2ProfileRole:
     Type: "AWS::IAM::Role"
