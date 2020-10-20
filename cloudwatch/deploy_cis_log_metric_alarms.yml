@@ -1,0 +1,380 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy CIS Log Metric Filters and Alarms
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "CloudWatch Logs and Alarms Configuration"
+        Parameters:
+          - CloudWatchLogGroup
+          - SNSTopicName
+          - EmailAddress
+Parameters:
+  CloudWatchLogGroup:
+    Description: Pre-created CloudWatch Log Group
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    Default: "aws-controltower/CloudTrailLogs"
+  SNSTopicName:
+    Description: SNS Topic Name
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    Default: "aws-securityhub-Notifications"
+  EmailAddress:
+    Description: Email Address for Notifications
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    Default: "erpost@example.com"
+
+Resources:
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: !Ref EmailAddress
+          Protocol: email
+      TopicName: !Ref SNSTopicName
+
+  CIS31Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.errorCode = \"*UnauthorizedOperation\") || ($.errorCode = \"AccessDenied*\")}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.1-UnauthorizedApiCalls"
+  CIS31Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.1-UnauthorizedApiCalls"
+      AlarmDescription: CIS Benchmark 3.1 | Unauthorized API Calls detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.1-UnauthorizedApiCalls"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 5
+      TreatMissingData: notBreaching
+
+  CIS32Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{
+         ($.eventName = \"ConsoleLogin\") &&
+         ($.additionalEventData.MFAUsed != \"Yes\") &&
+         ($.responseElements.ConsoleLogin != \"Failure\") &&
+         ($.additionalEventData.SamlProviderArn NOT EXISTS)
+         }"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.2-ConsoleSigninWithoutMFA"
+  CIS32Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.2-ConsoleSigninWithoutMFA"
+      AlarmDescription: CIS Benchmark 3.2 | Console Signin Without MFA
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.2-ConsoleSigninWithoutMFA"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS33Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{
+        $.userIdentity.type = \"Root\" &&
+        $.userIdentity.invokedBy NOT EXISTS &&
+        $.eventType != \"AwsServiceEvent\"
+        }"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.3-RootAccountUsage"
+  CIS33Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.3-RootAccountUsage"
+      AlarmDescription: CIS Benchmark 3.3 (and 1.1) | Root user activity detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.3-RootAccountUsage"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS34Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventName=DeleteGroupPolicy) ||
+        ($.eventName=DeleteRolePolicy) ||
+        ($.eventName=DeleteUserPolicy) ||
+        ($.eventName=PutGroupPolicy) ||
+        ($.eventName=PutRolePolicy) ||
+        ($.eventName=PutUserPolicy) ||
+        ($.eventName=CreatePolicy) ||
+        ($.eventName=DeletePolicy) ||
+        ($.eventName=CreatePolicyVersion) ||
+        ($.eventName=DeletePolicyVersion) ||
+        ($.eventName=AttachRolePolicy) ||
+        ($.eventName=DetachRolePolicy) ||
+        ($.eventName=AttachUserPolicy) ||
+        ($.eventName=DetachUserPolicy) ||
+        ($.eventName=AttachGroupPolicy) ||
+        ($.eventName=DetachGroupPolicy)}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.4-IAMPolicyChanges"
+  CIS34Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.4-IAMPolicyChanges"
+      AlarmDescription: CIS Benchmark 3.4 | IAM Policy Changes detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.4-IAMPolicyChanges"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS35Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventName=CreateTrail) ||
+        ($.eventName=UpdateTrail) ||
+        ($.eventName=DeleteTrail) ||
+        ($.eventName=StartLogging) ||
+        ($.eventName=StopLogging)}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.5-CloudTrailChanges"
+  CIS35Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.5-CloudTrailChanges"
+      AlarmDescription: CIS Benchmark 3.5 | CloudTrail Configuration Change detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.5-CloudTrailChanges"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS36Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventName=ConsoleLogin) && ($.errorMessage=\"Failed authentication\")}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.6-ConsoleAuthenticationFailure"
+  CIS36Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.6-ConsoleAuthenticationFailure"
+      AlarmDescription: CIS Benchmark 3.6 | Console Authentification Failures detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.6-ConsoleAuthenticationFailure"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 2
+      TreatMissingData: notBreaching
+
+  CIS37Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventSource=kms.amazonaws.com) &&
+        (($.eventName=DisableKey) ||
+        ($.eventName=ScheduleKeyDeletion))}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.7-DisableOrDeleteCMK"
+  CIS37Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.7-DisableOrDeleteCMK"
+      AlarmDescription: CIS Benchmark 3.7 | Disable or Delete of KMS CMKs detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.7-DisableOrDeleteCMK"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS38Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventSource=s3.amazonaws.com) &&
+        (($.eventName=PutBucketAcl) ||
+        ($.eventName=PutBucketPolicy) ||
+        ($.eventName=PutBucketCors) ||
+        ($.eventName=PutBucketLifecycle) ||
+        ($.eventName=PutBucketReplication) ||
+        ($.eventName=DeleteBucketPolicy) ||
+        ($.eventName=DeleteBucketCors) ||
+        ($.eventName=DeleteBucketLifecycle) ||
+        ($.eventName=DeleteBucketReplication))}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.8-S3BucketPolicyChanges"
+  CIS38Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.8-S3BucketPolicyChanges"
+      AlarmDescription: CIS Benchmark 3.8 | S3 Bucket Policy Changes detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.8-S3BucketPolicyChanges"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS39Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventSource=config.amazonaws.com) &&
+        (($.eventName=StopConfigurationRecorder) ||
+        ($.eventName=DeleteDeliveryChannel) ||
+        ($.eventName=PutDeliveryChannel) ||
+        ($.eventName=PutConfigurationRecorder))}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.9-AWSConfigChanges"
+  CIS39Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.9-AWSConfigChanges"
+      AlarmDescription: CIS Benchmark 3.9 | AWS Config Changes detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.9-AWSConfigChanges"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS310Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventName=AuthorizeSecurityGroupIngress) ||
+        ($.eventName=AuthorizeSecurityGroupEgress) ||
+        ($.eventName=RevokeSecurityGroupIngress) ||
+        ($.eventName=RevokeSecurityGroupEgress) ||
+        ($.eventName=CreateSecurityGroup) ||
+        ($.eventName=DeleteSecurityGroup)}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.10-SecurityGroupChanges"
+  CIS310Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.10-SecurityGroupChanges"
+      AlarmDescription: CIS Benchmark 3.10 | Security Group Changes detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.10-SecurityGroupChanges"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
+
+  CIS311Metric:
+    Type: AWS::Logs::MetricFilter
+    Properties:
+      FilterPattern: "{($.eventName=CreateNetworkAcl) ||
+        ($.eventName=CreateNetworkAclEntry) ||
+        ($.eventName=DeleteNetworkAcl) ||
+        ($.eventName=DeleteNetworkAclEntry) ||
+        ($.eventName=ReplaceNetworkAclEntry) ||
+        ($.eventName=ReplaceNetworkAclAssociation)}"
+      LogGroupName: !Ref CloudWatchLogGroup
+      MetricTransformations:
+        -
+          MetricValue: "1"
+          MetricNamespace: "SecurityHub"
+          MetricName: "CIS-3.11-NetworkACLChanges"
+  CIS311Alarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "CIS-3.11-NetworkACLChanges"
+      AlarmDescription: CIS Benchmark 3.11 | NACL Changes detected
+      AlarmActions:
+        - !Ref SNSTopic
+      MetricName: "CIS-3.11-NetworkACLChanges"
+      Namespace: "SecurityHub"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching
