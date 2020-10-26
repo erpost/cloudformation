@@ -6,16 +6,31 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          default: "S3 Bucket Configuration"
+          default: "IAM Configuration"
         Parameters:
           - S3BackupBucket
+          - NetworkStackName
+          - ComputeStackName
 Parameters:
   S3BackupBucket:
-    Description: Pre-created S3 Bucket to be used for Hot/Warm Tier Backups
+    Description: Pre-created S3 Bucket to be used for Hot and/or Warm Tier Backups
     Type: String
     MinLength: '1'
     MaxLength: '255'
     Default: ece-poc-backups
+  NetworkStackName:
+    Description: CloudFormation Network Stack Name
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    Default: ece-network
+  ComputeStackName:
+    Description: CloudFormation Compute Stack Name
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    Default: ece-compute
+
 Resources:
   FlowLogRole:
     Type: "AWS::IAM::Role"
@@ -97,7 +112,6 @@ Resources:
       GroupName: "CloudFormationDeployers"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/ReadOnlyAccess
-        - arn:aws:iam::aws:policy/AWSCloudFormationFullAccess
         - !Ref S3CloudFormationPolicy
 
   S3CloudFormationPolicy:
@@ -112,8 +126,21 @@ Resources:
           -
             Effect: "Allow"
             Action:
-              s3:*
+              - s3:Get*
+              - s3:List*
+              - s3:PutObject
             Resource: "arn:aws:s3:::cf-templates-*"
+          -
+            Effect: "Allow"
+            Action:
+              - cloudformation:*
+            Resource:
+              - !Sub "arn:aws:cloudformation:*:*:stack/${NetworkStackName}/*"
+              - !Sub "arn:aws:cloudformation:*:*:stack/${ComputeStackName}/*"
+          -
+            Effect: "Allow"
+            Action: cloudformation:CreateUploadBucket
+            Resource: "*"
 
   Ec2ProfileRole:
     Type: "AWS::IAM::Role"
