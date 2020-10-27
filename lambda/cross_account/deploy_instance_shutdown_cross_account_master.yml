@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Configure the Cross-Account IAM Master Account Roles for EC2 Shutdown and Startup
+
+Parameters:
+  ManagedResourcePrefix:
+    Type: 'String'
+    Description: 'Prefix for the managed resources'
+    Default: 'EC2Shutdown'
+
+Resources:
+  EC2AdminRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ManagedResourcePrefix}-AdminRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+      Policies:
+        - PolicyName: !Sub AssumeRole-${ManagedResourcePrefix}-AdminRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  - !Sub "arn:aws:iam::*:role/${ManagedResourcePrefix}-ExecutionRole"
+  EC2ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ManagedResourcePrefix}-ExecutionRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt 'EC2AdminRole.Arn'
+            Action:
+              - sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: !Sub ${ManagedResourcePrefix}-ExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ec2:DescribeInstances"
+                  - "ec2:StopInstances"
+                  - "ec2:StartInstances"
+                  - "ec2:DescribeInstanceStatus"
+                Resource: "*"
+
+Outputs:
+  CrossAccountAdminRole:
+    Description: EC2 Shutdown Role
+    Value: !GetAtt 'EC2AdminRole.Arn'
