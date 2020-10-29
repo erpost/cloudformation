@@ -5,11 +5,11 @@ Parameters:
   ManagedResourcePrefix:
     Type: 'String'
     Description: 'Prefix for the managed resources'
-    Default: 'EC2Shutdown'
+    Default: 'EC2Automation'
   CrossAccountRole:
     Type: 'String'
     Description: 'Cross Account Role Deployed into Master Account'
-    Default: 'arn:aws:iam::XXXXXXXXXXXX:role/EC2Shutdown-AdminRole'
+    Default: 'arn:aws:iam::XXXXXXXXXXXX:role/EC2Automation-AdminRole'
 Resources:
   EC2ExecutionRole:
     Type: AWS::IAM::Role
