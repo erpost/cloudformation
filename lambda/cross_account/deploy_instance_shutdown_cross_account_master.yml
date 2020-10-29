@@ -1,7 +1,68 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Configure the Cross-Account IAM Master Account Roles for EC2 Shutdown and Startup
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Instance Stop Configuration"
+        Parameters:
+          - StopStatus
+          - StopTime
+      -
+        Label:
+          default: "Instance Start Configuration"
+        Parameters:
+          - StartStatus
+          - StartTime
+      -
+        Label:
+          default: "Additional Parameters"
+        Parameters:
+          - AdminAccount
+          - KeyName
+          - KeyValue
+          - ManagedResourcePrefix
+
+    ParameterLabels:
+      AdminAccount:
+        default: "Administrator Account ID"
+      KeyName:
+        default: "Tag Key Name"
+      KeyValue:
+        default: "Tag Key Value"
+      StopTime:
+        default: "Instance Shutdown Time.  Default is Monday-Friday 22:00 UTC (5:00pm EST/4:00pm EDT)"
+      StopStatus:
+        default: "Determines whether the instances will be stopped each day (either ENABLED or DISABLED)"
+      StartTime:
+        default: "Instance Startup Time.  Default is Monday-Friday 13:00 UTC (9:00am EST/8:00am EDT)"
+      StartStatus:
+        default: "Determines whether the instances will be started each day (either ENABLED or DISABLED)"
+
 Parameters:
+  AdminAccount:
+    Type: String
+    Default: "123456789876"
+  KeyName:
+    Type: String
+    Default: sandman
+  KeyValue:
+    Type: String
+    Default: true
+  StopTime:
+    Type: String
+    Default: cron(00 22 ? * MON-FRI *)
+  StopStatus:
+    Type: String
+    Default: ENABLED
+  StartTime:
+    Type: String
+    Default: cron(00 13 ? * MON-FRI *)
+  StartStatus:
+    Type: String
+    Default: DISABLED
   ManagedResourcePrefix:
     Type: 'String'
     Description: 'Prefix for the managed resources'
@@ -59,6 +120,71 @@ Resources:
                   - "ec2:StartInstances"
                   - "ec2:DescribeInstanceStatus"
                 Resource: "*"
+  LambdaEC2Stop:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          def lambda_handler(event, context):
+              sts_connection = boto3.client('sts')
+              account = sts_connection.assume_role(
+                  RoleArn= "arn:aws:iam::${AdminAccount}:role/${ManagedResourcePrefix}-ExecutionRole",
+                  RoleSessionName="cross_acct_ec2_shutdown"
+              )
+
+              ACCESS_KEY = account['Credentials']['AccessKeyId']
+              SECRET_KEY = account['Credentials']['SecretAccessKey']
+              SESSION_TOKEN = account['Credentials']['SessionToken']
+
+              ec2 = boto3.resource(
+                  'ec2',
+                  aws_access_key_id=ACCESS_KEY,
+                  aws_secret_access_key=SECRET_KEY,
+                  aws_session_token=SESSION_TOKEN,
+              )
+
+              running_ids = []
+
+              running_instances = ec2.instances.filter(
+                                  Filters=[{'Name': 'instance-state-name', 'Values': ['running']},
+                                           {'Name': 'tag:${KeyName}', 'Values': ['${KeyValue}']}
+                                           ])
+              for running_instance in running_instances:
+                      running_ids.append(running_instance.id)
+              if len(running_ids) < 1:
+                  print('No eligible running instances')
+              else:
+                  print('The following eligible running instances were shut down:')
+                  for running_id in running_ids:
+                      print(running_id)
+
+                  ec2.instances.filter(InstanceIds=running_ids).stop()
+      Description: Lambda Function to shutdown EC2 instances at a set time each night
+      FunctionName: !Join ['', [ !Ref "AWS::StackName", "-stop" ]]
+      Handler: 'index.lambda_handler'
+      Role: !GetAtt EC2AdminRole.Arn
+      Runtime: python3.7
+      Timeout: 20
+
+  ScheduledRuleStop:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: "scheduled-rule-stop"
+      Description: "Scheduled Stop Event Rule"
+      ScheduleExpression: !Ref StopTime
+      State: !Ref StopStatus
+      Targets:
+        -
+          Arn: !GetAtt LambdaEC2Stop.Arn
+          Id: Id123
+  PermissionForEventsToInvokeLambdaStop:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaEC2Stop
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ScheduledRuleStop.Arn
 
 Outputs:
   CrossAccountAdminRole:
