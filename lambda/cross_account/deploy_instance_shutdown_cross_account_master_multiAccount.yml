@@ -127,7 +127,7 @@ Resources:
         ZipFile: !Sub |
           import boto3
           def lambda_handler(event, context):
-            accounts = ['989208132125','162947053571']
+            accounts = [<accountNumber>,<accountNumber>]
             for account in accounts:
               print(account)
               sts_connection = boto3.client('sts')
