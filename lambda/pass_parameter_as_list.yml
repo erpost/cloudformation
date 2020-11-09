@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploys a Lambda Function to transform a Variable to a Python list
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "List of Accounts"
+        Parameters:
+          - Accounts
+    ParameterLabels:
+      Accounts:
+        default: "Comma-separated list of AWS Accounts"
+Parameters:
+  Accounts:
+    Type: String
+    Default: 123456789,987654321,010101010
+
+Resources:
+  LambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "lambdapolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            Resource: "*"
+      Roles:
+        - Ref: "LambdaRole"
+
+  LambdaTest:
+    Type: AWS::Lambda::Function
+    Properties:
+      Environment:
+        Variables:
+          listofaccounts: !Sub ${Accounts}
+      Code:
+        ZipFile: |
+          import boto3
+          import os
+          def lambda_handler(event, context):
+              accounts = os.environ['listofaccounts']
+              accounts_list = [account.strip() for account in accounts.split(",")]
+              print(accounts_list)
+      Description: Lambda Function to test passing a list
+      FunctionName: lambda-list-test
+      Handler: 'index.lambda_handler'
+      Role: !GetAtt LambdaRole.Arn
+      Runtime: python3.7
+      Timeout: 20
