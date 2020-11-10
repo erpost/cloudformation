@@ -33,7 +33,7 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS:
-                - !Join [':', ["arn:aws:iam:", !Ref "AWS::AccountId", "root" ]]
+#                - !Join [':', ["arn:aws:iam:", !Ref "AWS::AccountId", "root" ]]
                 - !Join [':', ["arn:aws:iam:", !Sub "${MasterAccountID}", "root" ]]
             Action:
               - "sts:AssumeRole"
