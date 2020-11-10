@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy SailPoint IAM Resources into AWS Organization Member Accounts
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Parameters"
+        Parameters:
+          - ResourcePrefix
+          - MasterAccountID
+
+Parameters:
+  ResourcePrefix:
+    Type: 'String'
+    Description: 'Prefix for the managed resources'
+    Default: 'SailPoint'
+  MasterAccountID:
+    Description: ARN of Organization Master Account Role for SailPoint
+    Type: String
+    MinLength: '1'
+
+Resources:
+  SailPointRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${ResourcePrefix}Role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !Join [':', ["arn:aws:iam:", !Ref "AWS::AccountId", "root" ]]
+                - !Join [':', ["arn:aws:iam:", !Sub "${MasterAccountID}", "root" ]]
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - !Ref SailPointAggregationPolicy
+  SailPointAggregationPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub "${ResourcePrefix}AggregationPolicy"
+      Path: /
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Sid: "GetAggregation"
+            Effect: "Allow"
+            Action:
+              - "iam:GetPolicyVersion"
+              - "iam:ListServiceSpecificCredentials"
+              - "iam:ListMFADevices"
+              - "iam:ListSigningCertificates"
+              - "iam:GetGroup"
+              - "iam:ListSSHPublicKeys"
+              - "iam:ListAttachedRolePolicies"
+              - "iam:ListAttachedUserPolicies"
+              - "iam:ListAttachedGroupPolicies"
+              - "iam:ListRolePolicies"
+              - "iam:ListAccessKeys"
+              - "iam:ListPolicies"
+              - "iam:GetRole"
+              - "iam:GetPolicy"
+              - "iam:ListGroupPolicies"
+              - "iam:ListRoles"
+              - "iam:ListUserPolicies"
+              - "iam:GetUserPolicy"
+              - "iam:ListGroupsForUser"
+              - "iam:ListAccountAliases"
+              - "iam:ListUsers"
+              - "iam:ListGroups"
+              - "iam:GetGroupPolicy"
+              - "iam:GetUser"
+              - "iam:GetRolePolicy"
+              - "iam:GetLoginProfile"
+              - "iam:ListEntitiesForPolicy"
+              - "iam:GetAccessKeyLastUsed"
+            Resource: "*"
