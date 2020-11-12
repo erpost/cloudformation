@@ -17,7 +17,7 @@ Parameters:
     Description: 'Prefix for the managed resources'
     Default: 'SailPoint'
   MasterAccountID:
-    Description: ARN of Organization Master Account Role for SailPoint
+    Description: 'ARN of Organization Master Account Role for SailPoint'
     Type: String
     MinLength: '1'
 
