@@ -434,7 +434,8 @@ Resources:
             VolumeType: gp2
       UserData:
         Fn::Base64: |
-          #! /bin/bash
+          #!/bin/bash
+
           # Update System
           yum -y update
 
@@ -467,7 +468,7 @@ Resources:
           yum install -y mongodb-org
 
           # Find Internal IP Address
-          IP=`curl http://169.254.169.254/latest/meta-data/local-ipv4`
+          IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
 
           # Configure MongoDB with Internal IP Address and Restart
           sed -i.bkp -e "s/bindIp:.*/bindIp: ${IP}/g" /etc/mongod.conf
@@ -491,9 +492,6 @@ Resources:
           rm -rf /appliance/install.tar.gz
           tar --warning=no-timestamp -xzvf /appliance/containers.tar.gz -C /appliance
           rm -rf /appliance/containers.tar.gz
-
-          # Load Docker Images
-          docker load -i /appliance/containers.tar
 
           # Create Directories Permissions
           mkdir /opt/cloudhedge
@@ -526,58 +524,6 @@ Resources:
 
           chmod -R 777 /opt/cloudhedge/shared
           chown -R root:root /opt/cloudhedge/shared
-
-          # Update CloudHedge Server Configuration
-          PubIP=`curl http://169.254.169.254/latest/meta-data/public-ipv4`
-          cp -p /appliance/rhel-cloudhedgeenv /appliance/cloudhedgeenv
-          sed -i -e "s/APP_HOST=https:\/\/<cloudhedge-enterprise-ip-address>/APP_HOST=https:\/\/${PubIP}/g" /appliance/cloudhedgeenv
-          sed -i -e "s/DB_URL_WITH_PORT=<cloudhedge-enterprise-ip-address>:27017/DB_URL_WITH_PORT=${IP}:27017/g" /appliance/cloudhedgeenv
-          sed -i -e "s/DB_USER=<your-db-user>/DB_USER=mongouser/g" /appliance/cloudhedgeenv
-          sed -i -e "s/DB_PASSWORD=<your-db-password>/DB_PASSWORD=mongoPassw0rd/g" /appliance/cloudhedgeenv
-          sed -i -e "s/DB_TRANSPORT=TLS/#DB_TRANSPORT=TLS/g" /appliance/cloudhedgeenv
-
-          # Create CloudHedge DB User File
-          bash -c 'cat <<EOF > /root/cloudhedgeuser.js
-          var cloudhedgeuser = { "user": "\${mongoUser}", "pwd": "\${mongoPass}", "roles": [ "readWrite" , "dbAdmin" ] };
-          use ch-db;
-          db.createUser(cloudhedgeuser);
-          exit
-          EOF'
-
-          # Add Final Install Script
-          bash -c 'cat <<EOF > /root/install.sh
-          #!/bin/bash
-
-          FILE=/root/bootsequence.complete
-          if [ ! -f "\$FILE" ]; then
-
-          echo "Bootstrap not complete. Please wait and try again."
-
-          else
-
-          echo "Input MongoDB User: "
-          read mongoUser
-          echo "Input MongoDB Password: "
-          read mongoPass
-
-          # Setup MongoDB Seed Data
-          IP=\$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-          mongo --host \${IP} < /appliance/cloudhedge-db-setup-appliance.js
-
-          # Create MongoDB User
-          mongo --host \${IP} < /root/cloudhedgeuser.js
-
-          # Update MongoDB Config File and Restart
-          sed -i.bkp -e "s/#security:/security:\n    authorization: "enabled"/" /etc/mongod.conf
-          systemctl restart mongod
-
-          # Start Containers
-          docker-compose -f /appliance/rhel-compose.yaml up -d
-
-          fi
-          EOF'
-
-          chmod 700 /root/install.sh
 
           # Create Boot Complete File
           touch /root/bootsequence.complete
