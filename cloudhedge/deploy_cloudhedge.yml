@@ -439,7 +439,7 @@ Resources:
           yum -y update
 
           # Disable SELinux
-          sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+          sed -i.bkp 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
           setenforce 0
 
           # Install and Enable Docker
@@ -494,6 +494,94 @@ Resources:
 
           # Load Docker Images
           docker load -i /appliance/containers.tar
+
+          # Create Directories Permissions
+          mkdir /opt/cloudhedge
+          mkdir /opt/cloudhedge/shared
+          mkdir /opt/cloudhedge/shared/activity-service
+          mkdir /opt/cloudhedge/shared/analytics-service
+          mkdir /opt/cloudhedge/shared/auth-gateway-service
+          mkdir /opt/cloudhedge/shared/aws-k8s-service
+          mkdir /opt/cloudhedge/shared/ci-service
+          mkdir /opt/cloudhedge/shared/cloud-infra-service
+          mkdir /opt/cloudhedge/shared/cloud-lease-service
+          mkdir /opt/cloudhedge/shared/core-engine
+          mkdir /opt/cloudhedge/shared/discover-service-linux
+          mkdir /opt/cloudhedge/shared/discover-service-windows
+          mkdir /opt/cloudhedge/shared/distribute-service
+          mkdir /opt/cloudhedge/shared/gc-k8s-service
+          mkdir /opt/cloudhedge/shared/infra-usage-analysis-engine
+          mkdir /opt/cloudhedge/shared/k8s-helm-service
+          mkdir /opt/cloudhedge/shared/license-service
+          mkdir /opt/cloudhedge/shared/logging-agent
+          mkdir /opt/cloudhedge/shared/logging-service
+          mkdir /opt/cloudhedge/shared/notification-service
+          mkdir /opt/cloudhedge/shared/openshift-service
+          mkdir /opt/cloudhedge/shared/report-service
+          mkdir /opt/cloudhedge/shared/repository-service
+          mkdir /opt/cloudhedge/shared/transform-service-linux
+          mkdir /opt/cloudhedge/shared/transform-service-windows
+          mkdir /opt/cloudhedge/shared/vault-service
+          mkdir /opt/cloudhedge/shared/webapp
+
+          chmod -R 777 /opt/cloudhedge/shared
+          chown -R root:root /opt/cloudhedge/shared
+
+          # Update CloudHedge Server Configuration
+          PubIP=`curl http://169.254.169.254/latest/meta-data/public-ipv4`
+          cp -p /appliance/rhel-cloudhedgeenv /appliance/cloudhedgeenv
+          sed -i -e "s/APP_HOST=https:\/\/<cloudhedge-enterprise-ip-address>/APP_HOST=https:\/\/${PubIP}/g" /appliance/cloudhedgeenv
+          sed -i -e "s/DB_URL_WITH_PORT=<cloudhedge-enterprise-ip-address>:27017/DB_URL_WITH_PORT=${IP}:27017/g" /appliance/cloudhedgeenv
+          sed -i -e "s/DB_USER=<your-db-user>/DB_USER=mongouser/g" /appliance/cloudhedgeenv
+          sed -i -e "s/DB_PASSWORD=<your-db-password>/DB_PASSWORD=mongoPassw0rd/g" /appliance/cloudhedgeenv
+          sed -i -e "s/DB_TRANSPORT=TLS/#DB_TRANSPORT=TLS/g" /appliance/cloudhedgeenv
+
+          # Create CloudHedge DB User File
+          bash -c 'cat <<EOF > /root/cloudhedgeuser.js
+          var cloudhedgeuser = { "user": "\${mongoUser}", "pwd": "\${mongoPass}", "roles": [ "readWrite" , "dbAdmin" ] };
+          use ch-db;
+          db.createUser(cloudhedgeuser);
+          exit
+          EOF'
+
+          # Add Final Install Script
+          bash -c 'cat <<EOF > /root/install.sh
+          #!/bin/bash
+
+          FILE=/root/bootsequence.complete
+          if [ ! -f "\$FILE" ]; then
+
+          echo "Bootstrap not complete. Please wait and try again."
+
+          else
+
+          echo "Input MongoDB User: "
+          read mongoUser
+          echo "Input MongoDB Password: "
+          read mongoPass
+
+          # Setup MongoDB Seed Data
+          IP=\$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+          mongo --host \${IP} < /appliance/cloudhedge-db-setup-appliance.js
+
+          # Create MongoDB User
+          mongo --host \${IP} < /root/cloudhedgeuser.js
+
+          # Update MongoDB Config File and Restart
+          sed -i.bkp -e "s/#security:/security:\n    authorization: "enabled"/" /etc/mongod.conf
+          systemctl restart mongod
+
+          # Start Containers
+          docker-compose -f /appliance/rhel-compose.yaml up -d
+
+          fi
+          EOF'
+
+          chmod 700 /root/install.sh
+
+          # Create Boot Complete File
+          touch /root/bootsequence.complete
+
       Tags:
         - Key: Name
           Value: !Join ['', ["chServer-", !Ref "AWS::StackName" ]]
