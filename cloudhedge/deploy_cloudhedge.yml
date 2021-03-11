@@ -280,29 +280,17 @@ Resources:
       ResourceType: VPC
       TrafficType: ALL
 
-  SecurityGroupSSHInbound:
+  SecurityGroupExternalAccess:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Enable SSH access via port 22
-      GroupName: SSH External
+      GroupDescription: Enable User Traffic on Ports 22, 80, 443
+      GroupName: User_Access
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
           CidrIp: !Ref SSHLocation
-      Tags:
-        - Key: Name
-          Value: !Join ['', ["sshInbound-", !Ref "AWS::StackName" ]]
-        - Key: !Ref TagKey
-          Value: !Ref TagValue
-  SecurityGroupHTTPSInbound:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Enable HTTPS access via port 443
-      GroupName: HTTPS
-      VpcId: !Ref VPC
-      SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '443'
           ToPort: '443'
@@ -313,64 +301,54 @@ Resources:
           CidrIp: !Ref SSHLocation
       Tags:
         - Key: Name
-          Value: !Join ['', ["httpsInbound-", !Ref "AWS::StackName" ]]
+          Value: !Join ['', ["user-", !Ref "AWS::StackName" ]]
         - Key: !Ref TagKey
           Value: !Ref TagValue
+  SecurityGroupCloudHedgeExternal:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable CloudHedge External IP Traffic
+      GroupName: CloudHedge External Access
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ "external-", !Ref "AWS::StackName" ] ]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  SecurityGroupIngress0:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupCloudHedgeExternal
+      IpProtocol: "-1"
+      CidrIp: !Join ['', [!Ref "CloudHedgeInstanceElasticIP", "/32" ]]
+  SecurityGroupIngress1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupCloudHedgeExternal
+      IpProtocol: "-1"
+      CidrIp: !Join ['', [!Ref "BuildInstanceElasticIP", "/32" ]]
+  SecurityGroupIngress2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupCloudHedgeExternal
+      IpProtocol: "-1"
+      CidrIp: !Join ['', [!Ref "ApplicationInstanceElasticIP", "/32" ]]
   SecurityGroupCloudHedgeInternal:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Enable CloudHedge Internal Traffic
-      GroupName: CloudHedge Internal
+      GroupDescription: Enable CloudHedge Internal IP Traffic
+      GroupName: CloudHedge Internal Access
       VpcId: !Ref VPC
       Tags:
         - Key: Name
           Value: !Join ['', ["internal-", !Ref "AWS::StackName" ]]
         - Key: !Ref TagKey
           Value: !Ref TagValue
-  SecurityGroupIngress1:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref SecurityGroupCloudHedgeInternal
-      IpProtocol: tcp
-      FromPort: '20'
-      ToPort: '21'
-      Description: "ftp"
-      SourceSecurityGroupId: !Ref SecurityGroupCloudHedgeInternal
-  SecurityGroupIngress2:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref SecurityGroupCloudHedgeInternal
-      IpProtocol: tcp
-      FromPort: '22'
-      ToPort: '22'
-      Description: "ssh"
-      SourceSecurityGroupId: !Ref SecurityGroupCloudHedgeInternal
   SecurityGroupIngress3:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref SecurityGroupCloudHedgeInternal
-      IpProtocol: tcp
-      FromPort: '443'
-      ToPort: '443'
-      Description: "https"
-      SourceSecurityGroupId: !Ref SecurityGroupCloudHedgeInternal
-  SecurityGroupIngress4:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref SecurityGroupCloudHedgeInternal
-      IpProtocol: tcp
-      FromPort: '445'
-      ToPort: '445'
-      Description: "smb"
-      SourceSecurityGroupId: !Ref SecurityGroupCloudHedgeInternal
-  SecurityGroupIngress5:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref SecurityGroupCloudHedgeInternal
-      IpProtocol: tcp
-      FromPort: '5985'
-      ToPort: '5986'
-      Description: "winrm"
+      IpProtocol: "-1"
       SourceSecurityGroupId: !Ref SecurityGroupCloudHedgeInternal
 
   Ec2ProfileRole:
@@ -421,9 +399,9 @@ Resources:
       InstanceType: !Ref CloudHedgeInstanceType
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
-        - !Ref SecurityGroupSSHInbound
-        - !Ref SecurityGroupHTTPSInbound
+        - !Ref SecurityGroupExternalAccess
         - !Ref SecurityGroupCloudHedgeInternal
+        - !Ref SecurityGroupCloudHedgeExternal
       KeyName: !Ref KeyName
       IamInstanceProfile: !Ref Ec2InstanceProfile
       ImageId: !Ref CloudHedgeAMIID
@@ -525,8 +503,15 @@ Resources:
           chmod -R 777 /opt/cloudhedge/shared
           chown -R root:root /opt/cloudhedge/shared
 
+          # Download Installer and Make Executable
+          aws s3 cp s3://cloudhedge-demo/cloudhedge_install.sh /root
+          chmod 700 /root/cloudhedge_install.sh
+
           # Create Boot Complete File
           touch /root/bootsequence.complete
+
+          # Load Docker Images
+          docker load -i /appliance/containers.tar
 
       Tags:
         - Key: Name
@@ -551,9 +536,9 @@ Resources:
       InstanceType: !Ref BuildInstanceType
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
-        - !Ref SecurityGroupSSHInbound
-        - !Ref SecurityGroupHTTPSInbound
+        - !Ref SecurityGroupExternalAccess
         - !Ref SecurityGroupCloudHedgeInternal
+        - !Ref SecurityGroupCloudHedgeExternal
       KeyName: !Ref KeyName
       ImageId: !Ref BuildAMIID
       BlockDeviceMappings:
@@ -603,9 +588,9 @@ Resources:
       InstanceType: !Ref ApplicationInstanceType
       SubnetId: !Ref Subnet2
       SecurityGroupIds:
-        - !Ref SecurityGroupSSHInbound
-        - !Ref SecurityGroupHTTPSInbound
+        - !Ref SecurityGroupExternalAccess
         - !Ref SecurityGroupCloudHedgeInternal
+        - !Ref SecurityGroupCloudHedgeExternal
       KeyName: !Ref KeyName
       ImageId: !Ref ApplicationAMIID
       BlockDeviceMappings:
@@ -613,56 +598,6 @@ Resources:
           Ebs:
             VolumeSize: 100
             VolumeType: gp2
-      UserData:
-        Fn::Base64: |
-          #! /bin/bash
-          # Update System
-          yum -y update
-
-          # Disable SELinux
-          sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
-          setenforce 0
-
-          # Disable requiretty
-          sed -i 's/\!visiblepw/\!visiblepw\nDefaults:centos    !requiretty/g' /etc/sudoers
-
-          # Install Git and Clone Repo
-          yum -y install git
-          git clone "https://github.com/bezikan/SpringBoot-Angular7-ShoppingCart.git" "/root/SpringBoot-Angular7-ShoppingCart"
-          mkdir /opt/eshop
-          mkdir /opt/eshop/backend
-          mkdir /opt/eshop/frontend
-
-          # Update Hosts File
-          sed -i.bkp 's/127\.0\.0\.1  /127\.0\.0\.1   db-host app-host/g' /etc/hosts
-
-          # Update App Settings
-          sed -i.bkp 's/localhost\/postgres/db-host\/postgres/g' /root/SpringBoot-Angular7-ShoppingCart/backend/src/main/resources/application.yml
-          sed -i.bkp 's/proxy_pass http:\/\/backend:8080\/api/proxy_pass http:\/\/app-host:8080\/api/g' /root/SpringBoot-Angular7-ShoppingCart/frontend/nginx/default.conf
-          sed -i 's/root \/usr\/share\/nginx\/html/root \/opt\/eshop\/frontend/g' /root/SpringBoot-Angular7-ShoppingCart/frontend/nginx/default.conf
-
-          # Create Service File
-          bash -c 'cat <<EOF > /usr/lib/systemd/system/eshop.service
-          [Unit]
-          Description=App Service
-          [Service]
-          Type=simple
-          WorkingDirectory=/opt/eshop/backend
-          ExecStart=/usr/bin/java -jar /opt/eshop/backend/shop-api-0.0.1-SNAPSHOT.jar
-          [Install]
-          WantedBy=multi-user.target
-          EOF'
-
-          ln -s /usr/lib/systemd/system/eshop.service /etc/systemd/system/multi-user.target.wants/eshop.service
-
-          # Install PostgreSQL and Configure
-          yum -y update
-          yum -y install postgresql-server
-          systemctl enable postgresql
-          postgresql-setup initdb
-          sed -i.bkp "s/#listen_addresses = 'localhost'/listen_addresses = '*'/g" /var/lib/pgsql/data/postgresql.conf
-          sed -i.bkp -e '$ahost    all             all              0.0.0.0/0               md5' /var/lib/pgsql/data/pg_hba.conf
-
       Tags:
         - Key: Name
           Value: !Join ['', ["applicationServer-", !Ref "AWS::StackName" ]]
