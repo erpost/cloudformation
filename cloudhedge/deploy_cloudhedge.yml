@@ -507,12 +507,11 @@ Resources:
           aws s3 cp s3://cloudhedge-demo/cloudhedge_install.sh /root
           chmod 700 /root/cloudhedge_install.sh
 
-          # Create Boot Complete File
-          touch /root/bootsequence.complete
-
           # Load Docker Images
           docker load -i /appliance/containers.tar
 
+          # Create Boot Complete File
+          touch /root/bootsequence.complete
       Tags:
         - Key: Name
           Value: !Join ['', ["chServer-", !Ref "AWS::StackName" ]]
