@@ -555,6 +555,12 @@ Resources:
           sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
           setenforce 0
 
+          # Install AWS CLI
+          yum -y install unzip
+          curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          ./aws/install
+
           # Install and Enable Docker
           yum install -y yum-utils device-mapper-persistent-data lvm2
           yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
