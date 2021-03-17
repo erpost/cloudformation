@@ -45,7 +45,7 @@ Metadata:
       BuildAMIID:
         default: "Build Server AMI"
       ApplicationAMIID:
-        default: "Build Server AMI"
+        default: "Application Server AMI"
       SSHLocation:
         default: "SSH Location"
       TagKey:
@@ -88,10 +88,11 @@ Parameters:
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
   CloudHedgeAMIID:
-    Default: "ami-0affd4508a5d2481b"
     Type: String
-    MinLength: '1'
-    MaxLength: '255'
+    Default: ami-0affd4508a5d2481b
+    AllowedValues:
+      - ami-0affd4508a5d2481b
+      - ami-01e36b7901e884a10
   CloudHedgeInstanceType:
     Description: Cloud Hedge Server type
     Type: String
@@ -102,10 +103,11 @@ Parameters:
       - t3.large
       - t3.xlarge
   BuildAMIID:
-    Default: "ami-0affd4508a5d2481b"
     Type: String
-    MinLength: '1'
-    MaxLength: '255'
+    Default: ami-0affd4508a5d2481b
+    AllowedValues:
+      - ami-0affd4508a5d2481b
+      - ami-01e36b7901e884a10
   BuildInstanceType:
     Description: Build Server type
     Type: String
@@ -117,10 +119,11 @@ Parameters:
       - t3.xlarge
     ConstraintDescription: Must be a valid EC2 instance type
   ApplicationAMIID:
-    Default: "ami-0affd4508a5d2481b"
     Type: String
-    MinLength: '1'
-    MaxLength: '255'
+    Default: ami-0c419950716378524
+    AllowedValues:
+      - ami-0c419950716378524
+      - ami-0722af1598d263206
   ApplicationInstanceType:
     Description: Application Server type
     Type: String
@@ -603,6 +606,21 @@ Resources:
           Ebs:
             VolumeSize: 100
             VolumeType: gp2
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+
+          # Pull Private IP Address
+          IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+
+          # Update Hosts File
+          sed -i.bkp -e '$a'${IP}'   db-host app-host' /etc/hosts
+
+          # Restart Nginx
+          systemctl restart nginx
+
+          # Restart eShop
+          systemctl restart eshop
       Tags:
         - Key: Name
           Value: !Join ['', ["applicationServer-", !Ref "AWS::StackName" ]]
