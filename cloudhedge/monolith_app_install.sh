@@ -1,5 +1,7 @@
 #!/bin/bash
 
+### This script is not fully automated at this time ###
+
 # Pull Private IP Address
 IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
 
