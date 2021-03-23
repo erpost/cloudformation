@@ -1,0 +1,203 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy Basic EKS Cluster
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Kubernetes Configuration"
+        Parameters:
+          - ClusterName
+          - AZs
+          - VPCCidr
+          - Sub1Cidr
+          - Sub2Cidr
+          - SSHLocation
+          - TagKey
+          - TagValue
+
+    ParameterLabels:
+      ClusterName:
+        default: "Kubernetes Cluster Name"
+      AZs:
+        default: "Choose 2 Availability Zones"
+      VPCCidr:
+        default: "VPC CIDR Block"
+      Sub1Cidr:
+        default: "Subnet 1 CIDR Block"
+      Sub2Cidr:
+        default: "Subnet 2 CIDR Block"
+      SSHLocation:
+        default: "SSH Location"
+      TagKey:
+        default: "Tag Key"
+      TagValue:
+        default: "Tag Value"
+
+Parameters:
+  ClusterName:
+    Type: String
+  VPCCidr:  # VPC CIDR Block
+    Type: String
+    Default: 10.51.0.0/16
+  Sub1Cidr:  # Subnet 1 CIDR Block
+    Type: String
+    Default: 10.51.1.0/24
+  Sub2Cidr:  # Subnet 2 CIDR Block
+    Type: String
+    Default: 10.51.2.0/24
+  AZs:  # Availability Zones
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  SSHLocation:
+    Description: "IP or range to SSH from"
+    Type: String
+  TagKey:
+    Default: "Environment"
+    Type: String
+  TagValue:
+    Default: "cloudhedge-development"
+    Type: String
+
+Resources:
+  ClusterServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "eks.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Description: Kubernetes Cluster Role
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      RoleName: k8s-cluster-service-role
+
+  RepositoryEshop:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: eshop
+  RepositoryPostgresql:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: postgresql
+  RepositoryNginx:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: nginx
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["igw-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["vpc-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Sub1Cidr
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Sub2Cidr
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["public-rt-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+  PublicRouteTableAssociationSubnet1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref Subnet1
+  PublicRouteTableAssociationSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref Subnet2
+
+  SecurityGroupK8sInternal:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable Kubernetes Internal Traffic
+      GroupName: Kubernetes Internal
+      VpcId: !Ref VPC
+  SecurityGroupIngress1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupK8sInternal
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref SecurityGroupK8sInternal
+  SecurityGroupK8sExternal:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable Traffic on Port 22
+      GroupName: Kubernetes External
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+
+  K8sCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref ClusterName
+      RoleArn: !GetAtt ClusterServiceRole.Arn
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGroupK8sInternal
+          - !Ref SecurityGroupK8sExternal
+        SubnetIds:
+          - !Ref Subnet1
+          - !Ref Subnet2
