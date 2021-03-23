@@ -186,18 +186,6 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Subnet2
 
-#  SecurityGroupK8sInternal:
-#    Type: 'AWS::EC2::SecurityGroup'
-#    Properties:
-#      GroupDescription: Enable Kubernetes Internal Traffic
-#      GroupName: Kubernetes Internal
-#      VpcId: !Ref VPC
-#  SecurityGroupIngress1:
-#    Type: AWS::EC2::SecurityGroupIngress
-#    Properties:
-#      GroupId: !Ref SecurityGroupK8sInternal
-#      IpProtocol: "-1"
-#      SourceSecurityGroupId: !Ref SecurityGroupK8sInternal
   SecurityGroupK8sExternal:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -217,7 +205,6 @@ Resources:
       RoleArn: !GetAtt ClusterServiceRole.Arn
       ResourcesVpcConfig:
 #        SecurityGroupIds:
-#          - !Ref SecurityGroupK8sInternal
 #          - !Ref SecurityGroupK8sExternal
         SubnetIds:
           - !Ref Subnet1
