@@ -77,6 +77,25 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
       RoleName: k8s-cluster-service-role
+  NodeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Description: Kubernetes Node Group Role
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+      RoleName: k8s-node-group-role
 
   RepositoryEshop:
     Type: AWS::ECR::Repository
@@ -122,6 +141,7 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub1Cidr
       AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      MapPublicIpOnLaunch: True
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
@@ -133,6 +153,7 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub2Cidr
       AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
+      MapPublicIpOnLaunch: True
       Tags:
       - Key: Name
         Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
@@ -165,23 +186,23 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Subnet2
 
-  SecurityGroupK8sInternal:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Enable Kubernetes Internal Traffic
-      GroupName: Kubernetes Internal
-      VpcId: !Ref VPC
-  SecurityGroupIngress1:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref SecurityGroupK8sInternal
-      IpProtocol: "-1"
-      SourceSecurityGroupId: !Ref SecurityGroupK8sInternal
+#  SecurityGroupK8sInternal:
+#    Type: 'AWS::EC2::SecurityGroup'
+#    Properties:
+#      GroupDescription: Enable Kubernetes Internal Traffic
+#      GroupName: Kubernetes Internal
+#      VpcId: !Ref VPC
+#  SecurityGroupIngress1:
+#    Type: AWS::EC2::SecurityGroupIngress
+#    Properties:
+#      GroupId: !Ref SecurityGroupK8sInternal
+#      IpProtocol: "-1"
+#      SourceSecurityGroupId: !Ref SecurityGroupK8sInternal
   SecurityGroupK8sExternal:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Enable Traffic on Port 22
-      GroupName: Kubernetes External
+      GroupName: Kubernetes External Access
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -195,9 +216,27 @@ Resources:
       Name: !Ref ClusterName
       RoleArn: !GetAtt ClusterServiceRole.Arn
       ResourcesVpcConfig:
-        SecurityGroupIds:
-          - !Ref SecurityGroupK8sInternal
-          - !Ref SecurityGroupK8sExternal
+#        SecurityGroupIds:
+#          - !Ref SecurityGroupK8sInternal
+#          - !Ref SecurityGroupK8sExternal
         SubnetIds:
+          - !Ref Subnet1
+          - !Ref Subnet2
+  K8sNodegroup:
+    Type: 'AWS::EKS::Nodegroup'
+    Properties:
+      AmiType: AL2_x86_64
+      CapacityType: ON_DEMAND
+      DiskSize: 80
+      InstanceTypes:
+        - t3.large
+      ClusterName: !Ref K8sCluster
+      NodegroupName: NodeGroup1
+      NodeRole: !GetAtt NodeRole.Arn
+      ScalingConfig:
+        MinSize: 2
+        DesiredSize: 2
+        MaxSize: 2
+      Subnets:
           - !Ref Subnet1
           - !Ref Subnet2
