@@ -13,6 +13,7 @@ Metadata:
           - VPCCidr
           - Sub1Cidr
           - Sub2Cidr
+          - NodeKeyName
           - SSHLocation
           - TagKey
           - TagValue
@@ -49,6 +50,9 @@ Parameters:
     Default: 10.51.2.0/24
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
+  NodeKeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
   SSHLocation:
     Description: "IP or range to SSH from"
     Type: String
@@ -76,7 +80,7 @@ Resources:
       Description: Kubernetes Cluster Role
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-      RoleName: k8s-cluster-service-role
+      RoleName: !Join ['', ["k8s-cluster-service-role-", !Ref "AWS::Region" ]]
   NodeRole:
     Type: AWS::IAM::Role
     Properties:
@@ -95,7 +99,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-      RoleName: k8s-node-group-role
+      RoleName: !Join ['', ["k8s-node-group-role-", !Ref "AWS::Region" ]]
 
   RepositoryEshop:
     Type: AWS::ECR::Repository
@@ -204,8 +208,6 @@ Resources:
       Name: !Ref ClusterName
       RoleArn: !GetAtt ClusterServiceRole.Arn
       ResourcesVpcConfig:
-#        SecurityGroupIds:
-#          - !Ref SecurityGroupK8sExternal
         SubnetIds:
           - !Ref Subnet1
           - !Ref Subnet2
@@ -220,6 +222,10 @@ Resources:
       ClusterName: !Ref K8sCluster
       NodegroupName: NodeGroup1
       NodeRole: !GetAtt NodeRole.Arn
+      RemoteAccess:
+        Ec2SshKey: !Ref NodeKeyName
+        SourceSecurityGroups:
+          - !Ref SecurityGroupK8sExternal
       ScalingConfig:
         MinSize: 2
         DesiredSize: 2
