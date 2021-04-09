@@ -190,6 +190,18 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Subnet2
 
+  SecurityGroupK8sInternal:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable K8s Cluster Internal IP Traffic
+      GroupName: K8s Cluster Internal Access
+      VpcId: !Ref VPC
+  SecurityGroupIngress1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupK8sInternal
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref SecurityGroupK8sInternal
   SecurityGroupK8sExternal:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -211,21 +223,21 @@ Resources:
         SubnetIds:
           - !Ref Subnet1
           - !Ref Subnet2
+        SecurityGroupIds:
+          - !Ref SecurityGroupK8sInternal
+
   K8sNodegroup:
     Type: 'AWS::EKS::Nodegroup'
     Properties:
+      LaunchTemplate:
+        Id: !Ref K8sLaunchTemplate
       AmiType: AL2_x86_64
       CapacityType: ON_DEMAND
-      DiskSize: 80
       InstanceTypes:
         - t3.large
       ClusterName: !Ref K8sCluster
       NodegroupName: NodeGroup1
       NodeRole: !GetAtt NodeRole.Arn
-      RemoteAccess:
-        Ec2SshKey: !Ref NodeKeyName
-        SourceSecurityGroups:
-          - !Ref SecurityGroupK8sExternal
       ScalingConfig:
         MinSize: 2
         DesiredSize: 2
@@ -233,3 +245,17 @@ Resources:
       Subnets:
           - !Ref Subnet1
           - !Ref Subnet2
+
+  K8sLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: K8sLaunchTemplate
+      LaunchTemplateData:
+        SecurityGroupIds: [!Ref SecurityGroupK8sInternal, !Ref SecurityGroupK8sExternal]
+        BlockDeviceMappings:
+          - Ebs:
+              VolumeSize: 80
+              VolumeType: gp2
+              DeleteOnTermination: true
+              Encrypted: true
+            DeviceName: /dev/xvda
