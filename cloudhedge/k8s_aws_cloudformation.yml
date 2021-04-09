@@ -252,6 +252,7 @@ Resources:
       LaunchTemplateName: K8sLaunchTemplate
       LaunchTemplateData:
         SecurityGroupIds: [!Ref SecurityGroupK8sInternal, !Ref SecurityGroupK8sExternal]
+        KeyName: !Ref NodeKeyName
         BlockDeviceMappings:
           - Ebs:
               VolumeSize: 80
