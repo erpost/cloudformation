@@ -1,0 +1,672 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy Cloud Hedge Development Environment
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "Network Configuration"
+        Parameters:
+          - AZs
+          - VPCCidr
+          - Sub1Cidr
+          - Sub2Cidr
+          - FlowLogRetentionPeriod
+      -
+        Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - CloudHedgeAMIID
+          - CloudHedgeInstanceType
+          - BuildAMIID
+          - BuildInstanceType
+          - ApplicationAMIID
+          - ApplicationInstanceType
+          - KeyName
+          - SSHLocation
+          - TagKey
+          - TagValue
+          - S3Bucket
+
+    ParameterLabels:
+      AZs:
+        default: "Choose 2 Availability Zones"
+      FlowLogRetentionPeriod:
+        default: "Flow Log Retention Period"
+      VPCCidr:
+        default: "VPC CIDR Block"
+      Sub1Cidr:
+        default: "Subnet 1 CIDR Block"
+      Sub2Cidr:
+        default: "Subnet 2 CIDR Block"
+      CloudHedgeAMIID:
+        default: "Cloud Hedge Server AMI"
+      BuildAMIID:
+        default: "Build Server AMI"
+      ApplicationAMIID:
+        default: "Application Server AMI"
+      SSHLocation:
+        default: "SSH Location"
+      TagKey:
+        default: "Tag Key"
+      TagValue:
+        default: "Tag Value"
+
+
+Parameters:
+  FlowLogRetentionPeriod: # CloudWatch Log Group Retention Period
+    Type: String
+    Default: 7
+    AllowedValues:
+      - 1
+      - 3
+      - 5
+      - 7
+      - 14
+      - 30
+      - 60
+      - 90
+      - 120
+      - 150
+      - 180
+      - 365
+      - 400
+      - 545
+      - 731
+      - 1827
+      - 3653
+  VPCCidr:  # VPC CIDR Block
+    Type: String
+    Default: 10.50.0.0/16
+  Sub1Cidr:  # Subnet 1 CIDR Block
+    Type: String
+    Default: 10.50.1.0/24
+  Sub2Cidr:  # Subnet 2 CIDR Block
+    Type: String
+    Default: 10.50.2.0/24
+  AZs:  # Availability Zones
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+  CloudHedgeAMIID:
+    Type: String
+    Default: ami-0affd4508a5d2481b
+    AllowedValues:
+      - ami-0affd4508a5d2481b
+      - ami-01e36b7901e884a10
+  CloudHedgeInstanceType:
+    Description: Cloud Hedge Server type
+    Type: String
+    Default: t3.xlarge
+    AllowedValues:
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+  BuildAMIID:
+    Type: String
+    Default: ami-0affd4508a5d2481b
+    AllowedValues:
+      - ami-0affd4508a5d2481b
+      - ami-01e36b7901e884a10
+  BuildInstanceType:
+    Description: Build Server type
+    Type: String
+    Default: t3.small
+    AllowedValues:
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  ApplicationAMIID:
+    Type: String
+    Default: ami-0c419950716378524
+    AllowedValues:
+      - ami-0c419950716378524
+      - ami-0722af1598d263206
+  ApplicationInstanceType:
+    Description: Application Server type
+    Type: String
+    Default: t3.small
+    AllowedValues:
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    MinLength: '1'
+    MaxLength: '255'
+  SSHLocation:
+    Description: "IP or range to SSH from"
+    Type: String
+  TagKey:
+    Default: "Environment"
+    Type: String
+  TagValue:
+    Default: "cloudhedge-development"
+    Type: String
+  S3Bucket:
+    Description: Pre-created S3 Bucket where Cloud Hedge install resides
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    Default: cloudhedge-demo
+Resources:
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["igw-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  IGWAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["vpc-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Sub1Cidr
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref Sub2Cidr
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["public-rt-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+  PublicRouteTableAssociationSubnet2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref Subnet2
+
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      RouteTableIds:
+        - !Ref PublicRouteTable
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref VPC
+  FlowLogRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "vpc-flow-logs.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Tags:
+      - Key: Name
+        Value: !Join ['', ["flowLog-", !Ref "AWS::StackName" ]]
+      - Key: !Ref TagKey
+        Value: !Ref TagValue
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "flowlogpolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:DescribeLogGroups"
+              - "logs:DescribeLogStreams"
+              - "logs:PutLogEvents"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "FlowLogRole"
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join ['', ["/aws/vpc/flowLog/", !Ref TagValue ]]
+      RetentionInDays: !Ref FlowLogRetentionPeriod
+  VPCFlowLog:
+    Type: AWS::EC2::FlowLog
+    Properties:
+      DeliverLogsPermissionArn: !GetAtt FlowLogRole.Arn
+      LogGroupName: !Ref LogGroup
+      ResourceId: !Ref VPC
+      ResourceType: VPC
+      TrafficType: ALL
+
+  SecurityGroupExternalAccess:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable User Traffic on Ports 22, 80, 443
+      GroupName: User_Access
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: !Ref SSHLocation
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: !Ref SSHLocation
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["user-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  SecurityGroupCloudHedgeExternal:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable CloudHedge External IP Traffic
+      GroupName: CloudHedge External Access
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join [ '', [ "external-", !Ref "AWS::StackName" ] ]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  SecurityGroupIngress0:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupCloudHedgeExternal
+      IpProtocol: "-1"
+      CidrIp: !Join ['', [!Ref "CloudHedgeInstanceElasticIP", "/32" ]]
+  SecurityGroupIngress1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupCloudHedgeExternal
+      IpProtocol: "-1"
+      CidrIp: !Join ['', [!Ref "BuildInstanceElasticIP", "/32" ]]
+  SecurityGroupIngress2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupCloudHedgeExternal
+      IpProtocol: "-1"
+      CidrIp: !Join ['', [!Ref "ApplicationInstanceElasticIP", "/32" ]]
+  SecurityGroupCloudHedgeInternal:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable CloudHedge Internal IP Traffic
+      GroupName: CloudHedge Internal Access
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["internal-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  SecurityGroupIngress3:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroupCloudHedgeInternal
+      IpProtocol: "-1"
+      SourceSecurityGroupId: !Ref SecurityGroupCloudHedgeInternal
+
+  Ec2ProfileRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  Ec2ProfileRolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "ec2profilepolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "s3:*"
+            Resource: !Join ['', ["arn:aws:s3:::", !Ref S3Bucket ]]
+          -
+            Effect: "Allow"
+            Action:
+              - "s3:*"
+            Resource: !Join ['', ["arn:aws:s3:::", !Ref S3Bucket, "/*" ]]
+      Roles:
+        -
+          Ref: "Ec2ProfileRole"
+  Ec2InstanceProfile:
+    Type: "AWS::IAM::InstanceProfile"
+    Properties:
+      Path: "/"
+      Roles:
+        -
+          Ref: "Ec2ProfileRole"
+
+  CloudHedgeInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref CloudHedgeInstanceType
+      SubnetId: !Ref Subnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroupExternalAccess
+        - !Ref SecurityGroupCloudHedgeInternal
+        - !Ref SecurityGroupCloudHedgeExternal
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref Ec2InstanceProfile
+      ImageId: !Ref CloudHedgeAMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+
+          # Update System
+          yum -y update
+
+          # Disable SELinux
+          sed -i.bkp 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+          setenforce 0
+
+          # Install and Enable Docker
+          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          yum install -y docker-ce
+          systemctl enable docker.service
+          systemctl start docker.service
+
+          # Pull and Install Docker Compose
+          curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+
+          # Add MongoDB Repo and Install
+          bash -c 'cat <<EOF > /etc/yum.repos.d/mongodb-org-4.2.repo
+          [mongodb-org-4.2]
+          name=MongoDB Repository
+          baseurl=https://repo.mongodb.org/yum/redhat/\$releasever/mongodb-org/4.2/x86_64/
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://www.mongodb.org/static/pgp/server-4.2.asc
+          EOF'
+
+          yum update -y
+          yum install -y mongodb-org
+
+          # Find Internal IP Address
+          IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+
+          # Configure MongoDB with Internal IP Address and Restart
+          sed -i.bkp -e "s/bindIp:.*/bindIp: ${IP}/g" /etc/mongod.conf
+          systemctl enable mongod
+          systemctl start mongod
+
+          # Install AWS CLI
+          yum -y install unzip
+          curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          ./aws/install
+
+          # Make Directory
+          mkdir /appliance
+
+          # Download Installer
+          aws s3 cp s3://cloudhedge-demo/install.tar.gz /appliance
+
+          # Extract Package and Load Containers
+          tar -zxvf /appliance/install.tar.gz -C /appliance
+          rm -rf /appliance/install.tar.gz
+          tar --warning=no-timestamp -xzvf /appliance/containers.tar.gz -C /appliance
+          rm -rf /appliance/containers.tar.gz
+
+          # Create Directories Permissions
+          mkdir /opt/cloudhedge
+          mkdir /opt/cloudhedge/shared
+          mkdir /opt/cloudhedge/shared/activity-service
+          mkdir /opt/cloudhedge/shared/analytics-service
+          mkdir /opt/cloudhedge/shared/auth-gateway-service
+          mkdir /opt/cloudhedge/shared/aws-k8s-service
+          mkdir /opt/cloudhedge/shared/ci-service
+          mkdir /opt/cloudhedge/shared/cloud-infra-service
+          mkdir /opt/cloudhedge/shared/cloud-lease-service
+          mkdir /opt/cloudhedge/shared/core-engine
+          mkdir /opt/cloudhedge/shared/discover-service-linux
+          mkdir /opt/cloudhedge/shared/discover-service-windows
+          mkdir /opt/cloudhedge/shared/distribute-service
+          mkdir /opt/cloudhedge/shared/gc-k8s-service
+          mkdir /opt/cloudhedge/shared/infra-usage-analysis-engine
+          mkdir /opt/cloudhedge/shared/k8s-helm-service
+          mkdir /opt/cloudhedge/shared/license-service
+          mkdir /opt/cloudhedge/shared/logging-agent
+          mkdir /opt/cloudhedge/shared/logging-service
+          mkdir /opt/cloudhedge/shared/notification-service
+          mkdir /opt/cloudhedge/shared/openshift-service
+          mkdir /opt/cloudhedge/shared/report-service
+          mkdir /opt/cloudhedge/shared/repository-service
+          mkdir /opt/cloudhedge/shared/transform-service-linux
+          mkdir /opt/cloudhedge/shared/transform-service-windows
+          mkdir /opt/cloudhedge/shared/vault-service
+          mkdir /opt/cloudhedge/shared/webapp
+
+          chmod -R 777 /opt/cloudhedge/shared
+          chown -R root:root /opt/cloudhedge/shared
+
+          # Download Installer and Make Executable
+          aws s3 cp s3://cloudhedge-demo/cloudhedge_install.sh /root
+          chmod 700 /root/cloudhedge_install.sh
+
+          # Load Docker Images
+          docker load -i /appliance/containers.tar
+
+          # Create Boot Complete File
+          touch /root/bootsequence.complete
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["chServer-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+        - Key: Host
+          Value: 1
+  CloudHedgeInstanceElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref CloudHedgeInstance
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["chServerEip-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  BuildInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref BuildInstanceType
+      SubnetId: !Ref Subnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroupExternalAccess
+        - !Ref SecurityGroupCloudHedgeInternal
+        - !Ref SecurityGroupCloudHedgeExternal
+      KeyName: !Ref KeyName
+      ImageId: !Ref BuildAMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      UserData:
+        Fn::Base64: |
+          #! /bin/bash
+          # Update System
+          yum -y update
+
+          # Disable SELinux
+          sed -i 's/^SELINUX=.*/SELINUX=disabled/g' /etc/selinux/config
+          setenforce 0
+
+          # Install AWS CLI
+          yum -y install unzip
+          curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          ./aws/install
+
+          # Install and Enable Docker
+          yum install -y yum-utils device-mapper-persistent-data lvm2
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          yum install -y docker-ce
+          systemctl enable docker.service
+          systemctl start docker.service
+
+          # Disable requiretty
+          sed -i 's/\!visiblepw/\!visiblepw\nDefaults:centos    !requiretty/g' /etc/sudoers
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["buildServer-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+        - Key: Host
+          Value: 1
+  BuildInstanceElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref BuildInstance
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["buildEip-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+  ApplicationInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref ApplicationInstanceType
+      SubnetId: !Ref Subnet2
+      SecurityGroupIds:
+        - !Ref SecurityGroupExternalAccess
+        - !Ref SecurityGroupCloudHedgeInternal
+        - !Ref SecurityGroupCloudHedgeExternal
+      KeyName: !Ref KeyName
+      ImageId: !Ref ApplicationAMIID
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+
+          # Pull Private IP Address
+          IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+
+          # Update Hosts File
+          sed -i.bkp -e '$a'${IP}'   db-host app-host' /etc/hosts
+
+          # Restart Nginx
+          systemctl restart nginx
+
+          # Restart eShop
+          systemctl restart eshop
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["applicationServer-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+        - Key: Host
+          Value: 1
+  ApplicationInstanceElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref ApplicationInstance
+      Tags:
+        - Key: Name
+          Value: !Join ['', ["applicationEip-", !Ref "AWS::StackName" ]]
+        - Key: !Ref TagKey
+          Value: !Ref TagValue
+
+Outputs:
+  VPC:
+    Description: VPC CrossStack ID
+    Value: !Ref VPC
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-VPC"
+  VPCCIDR:
+    Description: VPC CIDR CrossStack ID
+    Value: !GetAtt VPC.CidrBlock
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-VPCCIDR"
+  IGW:
+    Description: IGW CrossStack ID
+    Value: !Ref IGW
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-IGW"
+  Subnet1:
+    Description: Subnet 1 CrossStack ID
+    Value: !Ref Subnet1
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet1"
+  Subnet2:
+    Description: Subnet 2 CrossStack ID
+    Value: !Ref Subnet2
+    Export:
+      Name:
+        !Sub "${AWS::StackName}-Subnet2"
