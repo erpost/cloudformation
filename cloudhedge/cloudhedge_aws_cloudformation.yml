@@ -467,11 +467,11 @@ Resources:
           mkdir /appliance
 
           # Download Installer
-          aws s3 cp s3://cloudhedge-demo/install.tar.gz /appliance
+          aws s3 cp s3://cloudhedge-demo/install_mantech_icons.tar.gz /appliance
 
           # Extract Package and Load Containers
-          tar -zxvf /appliance/install.tar.gz -C /appliance
-          rm -rf /appliance/install.tar.gz
+          tar -zxvf /appliance/install_mantech_icons.tar.gz -C /appliance
+          rm -rf /appliance/install_mantech_icons.tar.gz
           tar --warning=no-timestamp -xzvf /appliance/containers.tar.gz -C /appliance
           rm -rf /appliance/containers.tar.gz
 
