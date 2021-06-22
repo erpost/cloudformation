@@ -112,3 +112,20 @@ http {
 # Start Nginx
 systemctl enable nginx
 systemctl start nginx
+
+### Perform the updates below to make the database not overwrite itself each time
+# Refer to the Eshop setup guide Setup Backend section
+# On the source VM, change the following property in the file /application/SpringBoot-Angular7-ShoppingCart/backend/src/main/resources/application.yml
+    original setting - ddl-auto: create (this is under the jpa: hibernate settings)
+    recommended setting - ddl-auto: update
+# Run the java build command
+    mvn package -DskipTests
+# Stop the eshop backend service
+    service eshop stop
+# Copy the new jar file to the /opt/eshop/backend folder
+    sudo rm /opt/eshop/backend/shop-api-0.0.1-SNAPSHOT.jar
+    sudo cp target/shop-api-0.0.1-SNAPSHOT.jar /opt/eshop/backend/
+# Start the eshop backend service
+
+# Rediscover the application, complete the transform steps and create a new container image.
+# Use this new image in the deployment
