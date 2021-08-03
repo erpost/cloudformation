@@ -123,7 +123,7 @@ Parameters:
     Default: ami-0c419950716378524
     AllowedValues:
       - ami-0c419950716378524
-      - ami-0722af1598d263206
+      - ami-09160c060a8b24479
   ApplicationInstanceType:
     Description: Application Server type
     Type: String
@@ -467,11 +467,11 @@ Resources:
           mkdir /appliance
 
           # Download Installer
-          aws s3 cp s3://cloudhedge-demo/install_mantech_icons.tar.gz /appliance
+          aws s3 cp s3://cloudhedge-demo/install_mantech_icons_1.4.3.tar.gz /appliance
 
           # Extract Package and Load Containers
-          tar -zxvf /appliance/install_mantech_icons.tar.gz -C /appliance
-          rm -rf /appliance/install_mantech_icons.tar.gz
+          tar -zxvf /appliance/install_mantech_icons_1.4.3.tar.gz -C /appliance
+          rm -rf /appliance/install_mantech_icons_1.4.3.tar.gz
           tar --warning=no-timestamp -xzvf /appliance/containers.tar.gz -C /appliance
           rm -rf /appliance/containers.tar.gz
 
