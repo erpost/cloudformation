@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy LM Compute Components
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "CrossStack Reference"
+        Parameters:
+          - NetworkStackName
+      -
+        Label:
+          default: "EC2 Configuration"
+        Parameters:
+          - JumpBoxAMIID
+          - KeyName
+          - SSHLocation
+
+Parameters:
+  NetworkStackName:
+    Description: Name of an active CloudFormation Stack that contains the Networking Resources
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+  JumpBoxAMIID:
+    Description: ID of AMI for the Jump Box
+    Default: ami-087c17d1fe0178315
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the Jump Server
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 10.0.0.0/8
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
+  JumpBoxInstanceType:
+    Description: Jump Server type
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.micro
+      - t3.small
+    ConstraintDescription: Must be a valid EC2 instance type
+
+Resources:
+  SecurityGroupSSHInbound:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      GroupName: SSH External
+      VpcId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-VPC"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: !Ref SSHLocation
+
+  JumpBoxServer:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref JumpBoxInstanceType
+      SubnetId:
+        Fn::ImportValue:
+          !Sub "${NetworkStackName}-Subnet1"
+      SecurityGroupIds:
+        - !Ref SecurityGroupSSHInbound
+      KeyName: !Ref KeyName
+      ImageId: !Ref JumpBoxAMIID
+      Tags:
+        - Key: Name
+          Value: JumpServer
+        - Key: Environment
+          Value: !Join ['', ["jumpbox-", !Ref "AWS::StackName" ]]
+  JumpBoxServerIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref JumpBoxServer
+      Tags:
+        - Key: Environment
+          Value: !Join ['', ["jumpbox-eip", !Ref "AWS::StackName" ]]
