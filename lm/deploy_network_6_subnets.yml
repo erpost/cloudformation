@@ -1,18 +1,14 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy ECE Networking Components (VPC, Subnets, Routes, SGs, Internet & NAT Gateway, Flow Log)
+Description: Deploy LM Networking Components (VPC, Subnets, Routes, SGs, Internet & NAT Gateway, Flow Log)
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       -
         Label:
-          default: "CrossStack Reference"
-        Parameters:
-          - IAMStackName
-      -
-        Label:
           default: "Network Configuration"
         Parameters:
+          - Env
           - AZs
           - FlowLogRetentionPeriod
           - VPCCidr
@@ -24,32 +20,31 @@ Metadata:
           - Sub6Cidr
 
     ParameterLabels:
+      Env:
+        default: "Environment (Dev, Prod, etc.)"
       AZs:
-        default: "Choose 3 Availability Zones"
+        default: "Choose 2 Availability Zones"
       FlowLogRetentionPeriod:
         default: "Flow Log Retention Period"
       VPCCidr:
         default: "VPC CIDR Block"
       Sub1Cidr:
-        default: "Subnet 1 CIDR Block"
+        default: "Subnet 1 Public CIDR Block"
       Sub2Cidr:
-        default: "Subnet 2 CIDR Block"
+        default: "Subnet 2 Public CIDR Block"
       Sub3Cidr:
-        default: "Subnet 3 CIDR Block"
+        default: "Subnet 1 Private CIDR Block"
       Sub4Cidr:
-        default: "Subnet 4 CIDR Block"
+        default: "Subnet 2 Private CIDR Block"
       Sub5Cidr:
-        default: "Subnet 5 CIDR Block?"
+        default: "Subnet 1 Protected CIDR Block"
       Sub6Cidr:
-        default: "Subnet 6 CIDR Block?"
+        default: "Subnet 2 Protected CIDR Block"
 
 Parameters:
-  IAMStackName:
-    Description: Name of an active CloudFormation Stack that contains the IAM Resources
+  Env:
     Type: String
-    MinLength: '1'
-    MaxLength: '255'
-    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+    Default: "Dev"
   FlowLogRetentionPeriod: # CloudWatch Log Group Retention Period
     Type: String
     Default: 365
@@ -73,25 +68,25 @@ Parameters:
       - 3653
   VPCCidr:  # VPC CIDR Block
     Type: String
-    Default: 172.29.68.0/24
+    Default: 172.29.4.0/23
   Sub1Cidr:  # Subnet 1 CIDR Block
     Type: String
-    Default: 172.29.68.0/26
+    Default: 172.29.4.0/25
   Sub2Cidr:  # Subnet 2 CIDR Block
     Type: String
-    Default: 172.29.68.64/26
+    Default: 172.29.4.128/25
   Sub3Cidr:  # Subnet 3 CIDR Block
     Type: String
-    Default: 172.29.68.128/26
+    Default: 172.29.5.0/26
   Sub4Cidr:  # Subnet 4 CIDR Block
     Type: String
-    Default: 172.29.68.192/27
+    Default: 172.29.5.64/26
   Sub5Cidr:  # Subnet 5 CIDR Block
     Type: String
-    Default: 172.29.68.224/28
+    Default: 172.29.5.128/26
   Sub6Cidr:  # Subnet 6 CIDR Block
     Type: String
-    Default: 172.29.68.240/28
+    Default: 172.29.5.192/26
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
 
@@ -103,7 +98,7 @@ Resources:
         - Key: Name
           Value: !Join ['', ["igw-", !Ref "AWS::StackName" ]]
         - Key: Environment
-          Value: elastic-poc
+          Value: !Ref Env
   IGWAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -120,73 +115,73 @@ Resources:
       - Key: Name
         Value: !Join ['', ["vpc-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
   Subnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub1Cidr
-      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1 Public
       Tags:
       - Key: Name
-        Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-1-public-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
   Subnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub2Cidr
-      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2 Public
       Tags:
       - Key: Name
-        Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-2-public-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
   Subnet3:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub3Cidr
-      AvailabilityZone: !Select [ 2, !Ref AZs ]    # AZ 3
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1 Private
       Tags:
       - Key: Name
-        Value: !Join ['', ["AZ3-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-1-private-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
   Subnet4:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub4Cidr
-      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2 Private
       Tags:
       - Key: Name
-        Value: !Join ['', ["non-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-2-private-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
   Subnet5:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub5Cidr
-      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1 Protected
       Tags:
       - Key: Name
-        Value: !Join ['', ["public1-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-1-protected-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
   Subnet6:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub6Cidr
-      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2 Protected
       Tags:
       - Key: Name
-        Value: !Join ['', ["public2-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-2-protected-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -194,82 +189,108 @@ Resources:
       VpcId: !Ref VPC
       Tags:
       - Key: Name
-        Value: !Join ['', ["public-rt-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["public-route-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: !Ref Env
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref IGW
-  PublicRouteTableAssociationSubnet5:
+  PublicRouteTableAssociationSubnet1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref Subnet5
-  PublicRouteTableAssociationSubnet6:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref Subnet6
-  NAT:
-     Type: AWS::EC2::NatGateway
-     Properties:
-        AllocationId:
-           Fn::GetAtt:
-           - NATElasticIP
-           - AllocationId
-        SubnetId:
-           Ref: Subnet5
-  NATRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-      - Key: Name
-        Value: !Join ['', ["nat-rt-", !Ref "AWS::StackName" ]]
-      - Key: Environment
-        Value: elastic-poc
-  NATRoute:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref NATRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NAT
-  NATElasticIP:
-    DependsOn: IGWAttachment
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  NATRouteTableAssociationSubnet1:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref NATRouteTable
       SubnetId: !Ref Subnet1
-  NATRouteTableAssociationSubnet2:
+  PublicRouteTableAssociationSubnet2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      RouteTableId: !Ref NATRouteTable
+      RouteTableId: !Ref PublicRouteTable
       SubnetId: !Ref Subnet2
-  NATRouteTableAssociationSubnet3:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref NATRouteTable
-      SubnetId: !Ref Subnet3
-  NATRouteTableAssociationSubnet4:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref NATRouteTable
-      SubnetId: !Ref Subnet4
+
+#  NAT:
+#     Type: AWS::EC2::NatGateway
+#     Properties:
+#        AllocationId:
+#           Fn::GetAtt:
+#           - NATElasticIP
+#           - AllocationId
+#        SubnetId:
+#           Ref: Subnet1
+#  NATRouteTable:
+#    Type: AWS::EC2::RouteTable
+#    Properties:
+#      VpcId: !Ref VPC
+#      Tags:
+#      - Key: Name
+#        Value: !Join ['', ["private-route-", !Ref "AWS::StackName" ]]
+#      - Key: Environment
+#        Value: !Ref Env
+#  NATRoute:
+#    Type: AWS::EC2::Route
+#    Properties:
+#      RouteTableId: !Ref NATRouteTable
+#      DestinationCidrBlock: 0.0.0.0/0
+#      NatGatewayId: !Ref NAT
+#  NATElasticIP:
+#    DependsOn: IGWAttachment
+#    Type: AWS::EC2::EIP
+#    Properties:
+#      Domain: vpc
+#  NATRouteTableAssociationSubnet3:
+#    Type: AWS::EC2::SubnetRouteTableAssociation
+#    Properties:
+#      RouteTableId: !Ref NATRouteTable
+#      SubnetId: !Ref Subnet3
+#  NATRouteTableAssociationSubnet4:
+#    Type: AWS::EC2::SubnetRouteTableAssociation
+#    Properties:
+#      RouteTableId: !Ref NATRouteTable
+#      SubnetId: !Ref Subnet4
+
   S3Endpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       RouteTableIds:
-        - !Ref NATRouteTable
+#        - !Ref NATRouteTable
+        - !Ref PublicRouteTable
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
       VpcId: !Ref VPC
 
+  FlowLogRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "vpc-flow-logs.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+  RolePolicies:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "flowlogpolicy"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:DescribeLogGroups"
+              - "logs:DescribeLogStreams"
+              - "logs:PutLogEvents"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "FlowLogRole"
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -278,9 +299,7 @@ Resources:
   VPCFlowLog:
     Type: AWS::EC2::FlowLog
     Properties:
-      DeliverLogsPermissionArn:
-        Fn::ImportValue:
-          !Sub "${IAMStackName}-FlowLogRole"
+      DeliverLogsPermissionArn: !GetAtt FlowLogRole.Arn
       LogGroupName: !Ref LogGroup
       ResourceId: !Ref VPC
       ResourceType: VPC
@@ -305,12 +324,12 @@ Outputs:
     Export:
       Name:
         !Sub "${AWS::StackName}-IGW"
-  NAT:
-    Description: NAT GW CrossStack ID
-    Value: !Ref NAT
-    Export:
-      Name:
-        !Sub "${AWS::StackName}-NAT"
+#  NAT:
+#    Description: NAT GW CrossStack ID
+#    Value: !Ref NAT
+#    Export:
+#      Name:
+#        !Sub "${AWS::StackName}-NAT"
   Subnet1:
     Description: Subnet 1 CrossStack ID
     Value: !Ref Subnet1

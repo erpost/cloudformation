@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy ECE Networking Components (VPC, Subnets, Routes, SGs, Internet & NAT Gateway, Flow Log)
+Description: Deploy LM Networking Components (VPC, Subnets, Routes, SGs, Internet & NAT Gateway, Flow Log)
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -14,29 +14,23 @@ Metadata:
           - Sub1Cidr
           - Sub2Cidr
           - Sub3Cidr
-          - Sub4Cidr
-          - Sub5Cidr
-          - Sub6Cidr
+          - SubCidr
 
     ParameterLabels:
       AZs:
-        default: "Choose 3 Availability Zones"
+        default: "Choose 2 Availability Zones"
       FlowLogRetentionPeriod:
         default: "Flow Log Retention Period"
       VPCCidr:
         default: "VPC CIDR Block"
       Sub1Cidr:
-        default: "Subnet 1 CIDR Block"
+        default: "Subnet 1 Public CIDR Block"
       Sub2Cidr:
-        default: "Subnet 2 CIDR Block"
+        default: "Subnet 2 Public CIDR Block"
       Sub3Cidr:
-        default: "Subnet 3 CIDR Block"
+        default: "Subnet 1 Private CIDR Block"
       Sub4Cidr:
-        default: "Subnet 4 CIDR Block"
-      Sub5Cidr:
-        default: "Subnet 5 CIDR Block?"
-      Sub6Cidr:
-        default: "Subnet 6 CIDR Block?"
+        default: "Subnet 2 Private CIDR Block"
 
 Parameters:
   FlowLogRetentionPeriod: # CloudWatch Log Group Retention Period
@@ -62,25 +56,19 @@ Parameters:
       - 3653
   VPCCidr:  # VPC CIDR Block
     Type: String
-    Default: 172.29.68.0/24
+    Default: 172.29.4.0/23
   Sub1Cidr:  # Subnet 1 CIDR Block
     Type: String
-    Default: 172.29.68.0/26
+    Default: 172.29.4.0/26
   Sub2Cidr:  # Subnet 2 CIDR Block
     Type: String
-    Default: 172.29.68.64/26
+    Default: 172.29.4.64/26
   Sub3Cidr:  # Subnet 3 CIDR Block
     Type: String
-    Default: 172.29.68.128/26
+    Default: 172.29.4.128/26
   Sub4Cidr:  # Subnet 4 CIDR Block
     Type: String
-    Default: 172.29.68.192/27
-  Sub5Cidr:  # Subnet 5 CIDR Block
-    Type: String
-    Default: 172.29.68.224/28
-  Sub6Cidr:  # Subnet 6 CIDR Block
-    Type: String
-    Default: 172.29.68.240/28
+    Default: 172.29.4.192/26
   AZs:  # Availability Zones
     Type: List<AWS::EC2::AvailabilityZone::Name>
 
@@ -92,7 +80,7 @@ Resources:
         - Key: Name
           Value: !Join ['', ["igw-", !Ref "AWS::StackName" ]]
         - Key: Environment
-          Value: elastic-poc
+          Value: lm-dev
   IGWAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -109,73 +97,51 @@ Resources:
       - Key: Name
         Value: !Join ['', ["vpc-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: lm-dev
   Subnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub1Cidr
-      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1 Public
       Tags:
       - Key: Name
-        Value: !Join ['', ["AZ1-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-1-public-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: lm-dev
   Subnet2:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub2Cidr
-      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
+      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2 Public
       Tags:
       - Key: Name
-        Value: !Join ['', ["AZ2-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-2-public-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: lm-dev
   Subnet3:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub3Cidr
-      AvailabilityZone: !Select [ 2, !Ref AZs ]    # AZ 3
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1 Private
       Tags:
       - Key: Name
-        Value: !Join ['', ["AZ3-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-1-private-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: lm-dev
   Subnet4:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref Sub4Cidr
-      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
+      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 2 Private
       Tags:
       - Key: Name
-        Value: !Join ['', ["non-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["subnet-2-private-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
-  Subnet5:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: !Ref Sub5Cidr
-      AvailabilityZone: !Select [ 0, !Ref AZs ]    # AZ 1
-      Tags:
-      - Key: Name
-        Value: !Join ['', ["public1-", !Ref "AWS::StackName" ]]
-      - Key: Environment
-        Value: elastic-poc
-  Subnet6:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: !Ref Sub6Cidr
-      AvailabilityZone: !Select [ 1, !Ref AZs ]    # AZ 2
-      Tags:
-      - Key: Name
-        Value: !Join ['', ["public2-", !Ref "AWS::StackName" ]]
-      - Key: Environment
-        Value: elastic-poc
+        Value: lm-dev
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -183,25 +149,26 @@ Resources:
       VpcId: !Ref VPC
       Tags:
       - Key: Name
-        Value: !Join ['', ["public-rt-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["public-route-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: lm-dev
   PublicRoute:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref IGW
-  PublicRouteTableAssociationSubnet5:
+  PublicRouteTableAssociationSubnet1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref Subnet5
-  PublicRouteTableAssociationSubnet6:
+      SubnetId: !Ref Subnet1
+  PublicRouteTableAssociationSubnet2:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       RouteTableId: !Ref PublicRouteTable
-      SubnetId: !Ref Subnet6
+      SubnetId: !Ref Subnet2
+
   NAT:
      Type: AWS::EC2::NatGateway
      Properties:
@@ -210,16 +177,16 @@ Resources:
            - NATElasticIP
            - AllocationId
         SubnetId:
-           Ref: Subnet5
+           Ref: Subnet1
   NATRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
       - Key: Name
-        Value: !Join ['', ["nat-rt-", !Ref "AWS::StackName" ]]
+        Value: !Join ['', ["private-route-", !Ref "AWS::StackName" ]]
       - Key: Environment
-        Value: elastic-poc
+        Value: lm-dev
   NATRoute:
     Type: AWS::EC2::Route
     Properties:
@@ -231,16 +198,6 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
-  NATRouteTableAssociationSubnet1:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref NATRouteTable
-      SubnetId: !Ref Subnet1
-  NATRouteTableAssociationSubnet2:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref NATRouteTable
-      SubnetId: !Ref Subnet2
   NATRouteTableAssociationSubnet3:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -251,11 +208,13 @@ Resources:
     Properties:
       RouteTableId: !Ref NATRouteTable
       SubnetId: !Ref Subnet4
+
   S3Endpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       RouteTableIds:
         - !Ref NATRouteTable
+        - !Ref PublicRouteTable
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
       VpcId: !Ref VPC
 
@@ -355,15 +314,3 @@ Outputs:
     Export:
       Name:
         !Sub "${AWS::StackName}-Subnet4"
-  Subnet5:
-    Description: Subnet 5 CrossStack ID
-    Value: !Ref Subnet5
-    Export:
-      Name:
-        !Sub "${AWS::StackName}-Subnet5"
-  Subnet6:
-    Description: Subnet 6 CrossStack ID
-    Value: !Ref Subnet6
-    Export:
-      Name:
-        !Sub "${AWS::StackName}-Subnet6"

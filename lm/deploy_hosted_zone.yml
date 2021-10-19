@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy ECE Compute Components in 1 Availability Zone with Separate AMIs for each Compute Tier
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          default: "CrossStack Reference"
+        Parameters:
+          - NetworkStackName
+      -
+        Label:
+          default: "DNS Configuration"
+        Parameters:
+          - DNSPrivateZone
+
+Parameters:
+  NetworkStackName:
+    Description: Name of an active CloudFormation Stack that contains the Networking Resources
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '^[a-zA-Z][-a-zA-Z0-9]*$'
+
+  DNSPrivateZone:
+    Description: DNS Hosted Zone
+    Type: String
+    MinLength: '1'
+    MaxLength: '255'
+
+Resources:
+  DNS:
+    Type: "AWS::Route53::HostedZone"
+    Properties:
+      HostedZoneConfig:
+        Comment: 'Hosted Zone for LM'
+      Name: !Ref DNSPrivateZone
+      VPCs:
+        -
+          VPCId:
+            Fn::ImportValue:
+              !Sub "${NetworkStackName}-VPC"
+          VPCRegion: !Ref "AWS::Region"
+      HostedZoneTags:
+        -
+          Key: Name
+          Value:  !Join ['', ["private-zone-", !Ref "AWS::StackName" ]]
